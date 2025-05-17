@@ -38,7 +38,7 @@ else
 	mkdir -p -- $(BUILD_DIR)/src/shared
 endif
 
-SHARED_LIB_NAME    := MyLib
+SHARED_LIB_NAME    := LuaLoader
 SHARED_LIB_VERSION := 1.0.0
 
 SHARED_LIB_BIN_BASE_PATH := $(BUILD_DIR)/src/shared/$(SHARED_LIB_NAME)-$(SHARED_LIB_VERSION)

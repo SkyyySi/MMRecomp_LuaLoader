@@ -18,8 +18,8 @@ clear
 set -euCo pipefail
 cd "$(dirname -- "${BASH_SOURCE[0]}")"
 
-declare MOD_NAME='mm_recomp_shared_library_mod_template'
-declare SHARED_LIB_NAME='MyLib'
+declare MOD_NAME='lua_loader'
+declare SHARED_LIB_NAME='LuaLoader'
 declare SHARED_LIB_VERSION='1.0.0'
 
 declare MODS_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/Zelda64Recompiled/mods"
