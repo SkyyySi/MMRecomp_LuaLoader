@@ -42,7 +42,9 @@ native_libraries = [
 # Example native library:
 #    { name = "my_native_library", funcs = ["my_native_library_function"] }
     { name = "LuaLoader-1.0.0", funcs = [
-        "LuaLoader_MyFunction",
+        "LuaLoader_Init",
+        "LuaLoader_Deinit",
+        "LuaLoader_InvokeScriptCode",
     ] },
 ]
 
