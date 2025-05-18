@@ -7,9 +7,19 @@
 #include "./lua/src/lualib.h"
 #include "./lua/src/lauxlib.h"
 
+typedef int8_t  s8;
+typedef int16_t s16;
+typedef int32_t s32;
+typedef int64_t s64;
+
+typedef uint8_t  u8;
+typedef uint16_t u16;
+typedef uint32_t u32;
+typedef uint64_t u64;
+
 #define DLLEXPORT __attribute__((visibility("default")))
 
-DLLEXPORT const uint32_t recomp_api_version = 1;
+DLLEXPORT const u32 recomp_api_version = 1;
 
 DLLEXPORT void *LuaLoader_Init(void) {
 	fprintf(stderr, ">>> %s()\n", __func__);
@@ -25,7 +35,26 @@ DLLEXPORT void LuaLoader_Deinit(lua_State *L) {
 	lua_close(L);
 }
 
-DLLEXPORT int LuaLoader_InvokeScriptCode(lua_State *L, char **const script_code, size_t const script_code_size) {
+typedef struct {
+	u64 L;
+	u64 script_code;
+	u32 script_code_size;
+} LuaLoader_InvokeScriptCode_Args;
+
+DLLEXPORT int LuaLoader_InvokeScriptCode(u32 args_ptr_low, u32 args_ptr_high) {
+	/* lua_State *L, char **const script_code, size_t const script_code_size */
+	u64 args_ptr_full = args_ptr_low | (args_ptr_high << 32);
+	LuaLoader_InvokeScriptCode_Args *args_ptr = (LuaLoader_InvokeScriptCode_Args *)args_ptr_full;
+
+	{
+		printf(">>> %s -> args_ptr = 0x%016x\n", __func__, args_ptr);
+		return 0;
+	}
+
+	lua_State *L;
+	char **const script_code;
+	/* size_t */u32 const script_code_size;
+
 	printf(">>> %s -> script_code = %p\n", __func__, script_code);
 	fprintf(stderr, ">>> %s(L=%p, *script_code=\"%s\", script_code_size=%zu)\n", __func__, L, *script_code, script_code_size);
 
