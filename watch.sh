@@ -117,16 +117,20 @@ function rebuild_game() {
 	make -j "$(nproc)" || return 1
 	RecompModTool './mod.toml' './build' || return 1
 
-	flatpak run \
-		--command='/app/bin/Zelda64Recompiled' \
-		'io.github.zelda64recomp.zelda64recomp'
+	{
+		flatpak run \
+			--command='/app/bin/Zelda64Recompiled' \
+			'io.github.zelda64recomp.zelda64recomp'
 
-	local -i exit_code="$?"
+		local -i exit_code="$?"
 
-	if (( exit_code != 0 )); then
-		log 'The game terminated with non-zero exit code %d!' "$exit_code"
-		return "$exit_code"
-	fi
+		if (( exit_code != 0 )); then
+			log 'The game terminated with non-zero exit code %d!' "$exit_code"
+			return "$exit_code"
+		fi
+
+		log 'The game has been closed.'
+	} &
 }
 
 function stop_game() {
@@ -154,7 +158,7 @@ declare -i exit_code=0
 set +e
 
 while true; do
-	rebuild_game &
+	rebuild_game
 
 	while true; do
 		changed_file=$(inotifywait \

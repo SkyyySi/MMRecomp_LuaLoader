@@ -43,14 +43,15 @@ SHARED_LIB_VERSION := 1.0.0
 
 SHARED_LIB_BIN_BASE_PATH := $(BUILD_DIR)/src/shared/$(SHARED_LIB_NAME)-$(SHARED_LIB_VERSION)
 SHARED_LIB_SOURCE_PATH := ./src/shared/$(SHARED_LIB_NAME)/lib.c
-ZIG_CFLAGS := -static -shared -fPIC -O2 -g -I./include -I./src/shared/LuaLoader/lua/src -lm
+ZIG_CFLAGS := -static -shared -fPIC -I./include -I./src/shared/LuaLoader/lua/src -lm # -O2 -g
 
 $(C_OBJS): $(BUILD_DIR)/%.o : %.c | $(BUILD_DIR) $(BUILD_DIR)/src
 	$(CC) $(CFLAGS) $(CPPFLAGS) $< -MMD -MF $(@:.o=.d) -c -o $@
 #	$(CC) -shared -fPIC -I./include \
 #		-o $(BUILD_DIR)/src/shared/$(SHARED_LIB_NAME)-$(SHARED_LIB_VERSION).so \
 #		./src/shared/$(SHARED_LIB_NAME)/lib.c
-	zig cc -target x86_64-linux-gnu $(ZIG_CFLAGS) -march=native -flto -ldl -o $(SHARED_LIB_BIN_BASE_PATH).so    $(SHARED_LIB_SOURCE_PATH) ./src/shared/LuaLoader/lua/src/*.c
+	zig cc -target x86_64-linux-gnu $(ZIG_CFLAGS) -ldl -o $(SHARED_LIB_BIN_BASE_PATH).so $(SHARED_LIB_SOURCE_PATH) ./src/shared/LuaLoader/lua/src/*.c
+#zig cc -target x86_64-linux-gnu $(ZIG_CFLAGS) -march=native -flto -ldl -o $(SHARED_LIB_BIN_BASE_PATH).so    $(SHARED_LIB_SOURCE_PATH) ./src/shared/LuaLoader/lua/src/*.c
 #zig cc -target x86_64-windows   $(ZIG_CFLAGS) -march=native -flto -s   -o $(SHARED_LIB_BIN_BASE_PATH).dll   $(SHARED_LIB_SOURCE_PATH) ./src/shared/LuaLoader/lua/src/*.c
 #zig cc -target aarch64-macos    $(ZIG_CFLAGS)                          -o $(SHARED_LIB_BIN_BASE_PATH).dylib $(SHARED_LIB_SOURCE_PATH) ./src/shared/LuaLoader/lua/src/*.c
 

@@ -11,8 +11,8 @@ typedef struct {
 	u32 script_code_size;
 } LuaLoader_InvokeScriptCode_Args;
 
-RECOMP_IMPORT(".", void *LuaLoader_Init(void));
-RECOMP_IMPORT(".", void LuaLoader_Deinit(void *L));
-RECOMP_IMPORT(".", int LuaLoader_InvokeScriptCode(u32 args_ptr_low, u32 args_ptr_high));
+RECOMP_IMPORT(".", u32 LuaLoader_Init(void));
+RECOMP_IMPORT(".", void LuaLoader_Deinit(u64 L));
+RECOMP_IMPORT(".", s32 LuaLoader_InvokeScriptCode(u32 args_ptr_low, u32 args_ptr_high));
 
 #endif
