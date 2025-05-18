@@ -1,25 +1,32 @@
+#pragma once
+
 #ifndef __MOD_RECOMP_H__
 #define __MOD_RECOMP_H__ 1
 
-/*
-It is required to use this header in any shared libraries that are compiled into
-native host instructions ahead of time (instead of into MIPS like regular mods).
-If you don't use it, you'll only be able to call functions without any arguments
-and without any return values, as those will be completely incorrect. It acts as
-a bridge between N64 code and native code.
-
-This header can be thought of as "pseudo-assembly", see
-https://n64brew.dev/wiki/MIPS_III_instructions for more details on how the N64's
-instruction set works.
-*/
-
 /**
+ * @brief Core header for libraries that use native code instead of compiling
+ * into N64 MIPS instructions, opening up access to calling arbitrary system
+ * and C standard library functions (or any other shared library code).
+ * 
+ * It is required to use this header in any shared libraries that are compiled
+ * into native host instructions ahead of time (instead of into MIPS like normal
+ * mod code). If you don't use it, you'll only be able to call functions without
+ * any arguments and without any return values, as those will be completely
+ * incorrect. It acts as a bridge / translation layer between N64 mod code and
+ * native / shared library code.
+ *
+ * This header can be thought of as "pseudo-assembly", see
+ * https://n64brew.dev/wiki/MIPS_III_instructions for more details on how the
+ * N64's instruction set works.
+ *
  * @note In the code below, the suffixes "B", "H", "W" and "D" generally refer
  *       to integers with a size of 8, 16, 32 and 64 bits and are abbreviations
  *       for "byte", "halfword", "word" and "doubleword", respectively.
- */
-
-/**
+ *       Sometimes, "L" is used to refer to a 64-integer instead, referring to
+ *       the more commonly used "long" in the C programming language.
+ *       Additionally, "S" and "D" are also used to refer to 32-bit ("single-
+ *       precision") and 64-bit ("double-precision") floating-point values.
+ *
  * @note For the sake of simplicity, when the documentation below refers to
  *       something like an "N64 register" or the "N64 memory", it's refering to
  *       the recomp's "emulation" of these parts.
@@ -35,7 +42,7 @@ instruction set works.
  * @brief Mark a function as a member of your public API, allowing it to be
  *        called by mod code.
  *
- * A function marked with this macro is intended to be accessed by mod code by
+ * A function marked with this macro is intended to be accessed from mod code by
  * importing it with `RECOMP_IMPORT` over there. Don't forget that you also need
  * to add its name to the `funcs` list of your shared library in `mod.toml`.
  */
@@ -45,7 +52,7 @@ instruction set works.
  * @brief Mark a function as a member of your public API, allowing it to be
  *        called by mod code.
  *
- * A function marked with this macro is intended to be accessed by mod code by
+ * A function marked with this macro is intended to be accessed from mod code by
  * importing it with `RECOMP_IMPORT` over there. Don't forget that you also need
  * to add its name to the `funcs` list of your shared library in `mod.toml`.
  */
@@ -172,7 +179,7 @@ typedef uint64_t gpr;
  *                          data for N64 registers in memory.
  * @param[out] reg `gpr` The number of the target register to write to, acting
  *                       as an index into the array at `offset`.
- * @return Nothing.
+ * @return `void` Nothing.
  * @note This macro can only be used as a statement. Attempting to use it as an
  *       expression will result in a syntax error.
  */
@@ -270,7 +277,7 @@ static inline gpr do_lwr(uint8_t* rdram, gpr initial_value, gpr offset, gpr reg)
  * @param[out] reg `gpr` The number of the target register to write to, acting
  *                       as an index into the array at `offset`.
  * @param[in] val The value you want to store.
- * @return Nothing.
+ * @return `void` Nothing.
  */
 static inline void do_swl(uint8_t* rdram, gpr offset, gpr reg, gpr val) {
     // Calculate the overall address
@@ -296,7 +303,7 @@ static inline void do_swl(uint8_t* rdram, gpr offset, gpr reg, gpr val) {
  * @param[out] reg `gpr` The number of the target register to write to, acting
  *                       as an index into the array at `offset`.
  * @param[in] val The value you want to store.
- * @return Nothing.
+ * @return `void` Nothing.
  */
 static inline void do_swr(uint8_t* rdram, gpr offset, gpr reg, gpr val) {
     // Calculate the overall address
@@ -505,10 +512,14 @@ static inline int32_t do_cvt_w_d(double val, unsigned int rounding_mode) {
 #define CVT_W_D(val) \
     do_cvt_w_d(val, rounding_mode)
 
+/**
+ * @brief Check if a floating-point value is NaN (not a number), force stopping
+ *        the game immediately and logging a message to the terminal if it is.
+ * @param[in] val `float|double` The value to check.
+ * @return `void` Nothing.
+ */
 #define NAN_CHECK(val) \
     assert(val == val)
-
-//#define NAN_CHECK(val)
 
 /**
  * @brief A type which represents the data stored in an N64 floating-point
