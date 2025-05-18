@@ -313,54 +313,160 @@ static inline void do_swr(uint8_t* rdram, gpr offset, gpr reg, gpr val) {
     MEM_W(0, word_address) = masked_initial_value | shifted_input_value;
 }
 
+/**
+ * @brief Cast a number into a signed 32-bit integer.
+ * @param[in] val The value to convert.
+ * @return `s32` The converted value.
+ */
 #define S32(val) \
     ((int32_t)(val))
-    
+
+/**
+ * @brief Cast a number into an unsigned 32-bit integer.
+ * @param[in] val The value to convert.
+ * @return `u32` The converted value.
+ */
 #define U32(val) \
     ((uint32_t)(val))
 
+/**
+ * @brief Cast a number into a signed 64-bit integer.
+ * @param[in] val The value to convert.
+ * @return `s64` The converted value.
+ */
 #define S64(val) \
     ((int64_t)(val))
 
+/**
+ * @brief Cast a number into an unsigned 64-bit integer.
+ * @param[in] val The value to convert.
+ * @return `u64` The converted value.
+ */
 #define U64(val) \
     ((uint64_t)(val))
 
+/**
+ * @brief Multiply two 32-bit ("single-precision") floating-point values.
+ * @param[in] val1 `float` The first multiplier value.
+ * @param[in] val1 `float` The second multiplier value.
+ * @return `float` The product of multiplying `val1` with `val2`.
+ */
 #define MUL_S(val1, val2) \
     ((val1) * (val2))
 
+/**
+ * @brief Multiply two 64-bit ("double-precision") floating-point values.
+ * @param[in] val1 `double` The first multiplier value.
+ * @param[in] val1 `double` The second multiplier value.
+ * @return `double` The product of multiplying `val1` with `val2`.
+ */
 #define MUL_D(val1, val2) \
     ((val1) * (val2))
 
+/**
+ * @brief Divide a 32-bit ("single-precision") floating-point value by another.
+ * @param[in] val1 `float` The dividend value.
+ * @param[in] val1 `float` The divisor value.
+ * @return `float` The quotient value of dividing `val1` by `val2`.
+ */
 #define DIV_S(val1, val2) \
     ((val1) / (val2))
 
+/**
+ * @brief Divide a 64-bit ("double-precision") floating-point value by another.
+ * @param[in] val1 `double` The dividend value.
+ * @param[in] val1 `double` The divisor value.
+ * @return `double` The quotient value of dividing `val1` by `val2`.
+ */
 #define DIV_D(val1, val2) \
     ((val1) / (val2))
 
+/**
+ * @brief Convert a signed 32-bit integer (a "word") into a 32-bit ("single-
+ * precision") floating-point value.
+ * @param[in] val `s32` The value to convert.
+ * @return `float` The converted value.
+ */
 #define CVT_S_W(val) \
     ((float)((int32_t)(val)))
 
+/**
+ * @brief Convert a signed 32-bit integer (a "word") into a 64-bit ("double-
+ * precision") floating-point value.
+ * @param[in] val `s32` The value to convert.
+ * @return `double` The converted value.
+ */
 #define CVT_D_W(val) \
     ((double)((int32_t)(val)))
 
+/**
+ * @brief Convert a 32-bit ("single-precision") floating-point value into a
+ * 64-bit ("double-precision") floating-point value.
+ * @param[in] val `float` The value to convert.
+ * @return `double` The converted value.
+ */
 #define CVT_D_S(val) \
     ((double)(val))
 
+/**
+ * @brief Convert a 64-bit ("double-precision") floating-point value into a
+ * 32-bit ("single-precision") floating-point value.
+ * @param[in] val `double` The value to convert.
+ * @return `float` The converted value.
+ */
 #define CVT_S_D(val) \
     ((float)(val))
 
+/**
+ * @brief Convert a 32-bit ("single-precision") floating-point value into a
+ * 32-bit integer (a "word") by truncating, thus cutting off any decimal places,
+ * rounding towards zero and losing some precision (especially if the value
+ * is very small or extremely large).
+ * @param[in] val `float` The value to convert.
+ * @return `s32` The converted value.
+ */
 #define TRUNC_W_S(val) \
     ((int32_t)(val))
 
+/**
+ * @brief Convert a 64-bit ("double-precision") floating-point value into a
+ * 32-bit integer (a "word") by truncating, thus cutting off any decimal places,
+ * rounding towards zero and losing some precision (especially if the value
+ * is very small or extremely large).
+ * @param[in] val `double` The value to convert.
+ * @return `s32` The converted value.
+ */
 #define TRUNC_W_D(val) \
     ((int32_t)(val))
 
+/**
+ * @brief Convert a 32-bit ("single-precision") floating-point value into a
+ * 64-bit integer (a "long") by truncating, thus cutting off any decimal places,
+ * rounding towards zero and losing some precision (especially if the value
+ * is very small or extremely large).
+ * @param[in] val `float` The value to convert.
+ * @return `s64` The converted value.
+ */
 #define TRUNC_L_S(val) \
     ((int64_t)(val))
 
+/**
+ * @brief Convert a 64-bit ("double-precision") floating-point value into a
+ * 64-bit integer (a "long") by truncating, thus cutting off any decimal places,
+ * rounding towards zero and losing some precision (especially if the value
+ * is very small or extremely large).
+ * @param[in] val `double` The value to convert.
+ * @return `s64` The converted value.
+ */
 #define TRUNC_L_D(val) \
     ((int64_t)(val))
 
+/**
+ * @brief A constant that you may use as a default when calling a function that
+ * requires you to explicitly pass a rounding mode flag when you don't care
+ * about the specifics.
+ * @todo This should be replaced by an `enum`.
+ */
 #define DEFAULT_ROUNDING_MODE 0
 
 static inline int32_t do_cvt_w_s(float val, unsigned int rounding_mode) {
@@ -404,6 +510,10 @@ static inline int32_t do_cvt_w_d(double val, unsigned int rounding_mode) {
 
 //#define NAN_CHECK(val)
 
+/**
+ * @brief A type which represents the data stored in an N64 floating-point
+ *        register, allowing to access it as various different numeric types.
+ */
 typedef union {
     double d;
     struct {
@@ -417,6 +527,9 @@ typedef union {
     uint64_t u64;
 } fpr;
 
+/**
+ * @brief A type which represents the entire state of the N64 processor.
+ */
 typedef struct {
     gpr r0,  r1,  r2,  r3,  r4,  r5,  r6,  r7,
         r8,  r9,  r10, r11, r12, r13, r14, r15,
