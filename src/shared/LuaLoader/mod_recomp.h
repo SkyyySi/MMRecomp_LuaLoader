@@ -390,7 +390,7 @@ static inline void do_swr(uint8_t* rdram, gpr offset, gpr reg, gpr val) {
 
 /**
  * @brief Convert a signed 32-bit integer (a "word") into a 32-bit ("single-
- * precision") floating-point value.
+ *        precision") floating-point value.
  * @param[in] val `s32` The value to convert.
  * @return `float` The converted value.
  */
@@ -399,7 +399,7 @@ static inline void do_swr(uint8_t* rdram, gpr offset, gpr reg, gpr val) {
 
 /**
  * @brief Convert a signed 32-bit integer (a "word") into a 64-bit ("double-
- * precision") floating-point value.
+ *        precision") floating-point value.
  * @param[in] val `s32` The value to convert.
  * @return `double` The converted value.
  */
@@ -408,7 +408,7 @@ static inline void do_swr(uint8_t* rdram, gpr offset, gpr reg, gpr val) {
 
 /**
  * @brief Convert a 32-bit ("single-precision") floating-point value into a
- * 64-bit ("double-precision") floating-point value.
+ *        64-bit ("double-precision") floating-point value.
  * @param[in] val `float` The value to convert.
  * @return `double` The converted value.
  */
@@ -417,7 +417,7 @@ static inline void do_swr(uint8_t* rdram, gpr offset, gpr reg, gpr val) {
 
 /**
  * @brief Convert a 64-bit ("double-precision") floating-point value into a
- * 32-bit ("single-precision") floating-point value.
+ *        32-bit ("single-precision") floating-point value.
  * @param[in] val `double` The value to convert.
  * @return `float` The converted value.
  */
@@ -426,9 +426,9 @@ static inline void do_swr(uint8_t* rdram, gpr offset, gpr reg, gpr val) {
 
 /**
  * @brief Convert a 32-bit ("single-precision") floating-point value into a
- * 32-bit integer (a "word") by truncating, thus cutting off any decimal places,
- * rounding towards zero and losing some precision (especially if the value
- * is very small or extremely large).
+ *        32-bit integer (a "word") by truncating, thus cutting off any decimal
+ *        places, rounding towards zero and losing some precision (especially if
+ *        the value is very small or extremely large).
  * @param[in] val `float` The value to convert.
  * @return `s32` The converted value.
  */
@@ -437,9 +437,9 @@ static inline void do_swr(uint8_t* rdram, gpr offset, gpr reg, gpr val) {
 
 /**
  * @brief Convert a 64-bit ("double-precision") floating-point value into a
- * 32-bit integer (a "word") by truncating, thus cutting off any decimal places,
- * rounding towards zero and losing some precision (especially if the value
- * is very small or extremely large).
+ *        32-bit integer (a "word") by truncating, thus cutting off any decimal
+ *        places, rounding towards zero and losing some precision (especially if
+ *        the value is very small or extremely large).
  * @param[in] val `double` The value to convert.
  * @return `s32` The converted value.
  */
@@ -448,9 +448,9 @@ static inline void do_swr(uint8_t* rdram, gpr offset, gpr reg, gpr val) {
 
 /**
  * @brief Convert a 32-bit ("single-precision") floating-point value into a
- * 64-bit integer (a "long") by truncating, thus cutting off any decimal places,
- * rounding towards zero and losing some precision (especially if the value
- * is very small or extremely large).
+ *        64-bit integer (a "long") by truncating, thus cutting off any decimal
+ *        places, rounding towards zero and losing some precision (especially if
+ *        the value is very small or extremely large).
  * @param[in] val `float` The value to convert.
  * @return `s64` The converted value.
  */
@@ -459,9 +459,9 @@ static inline void do_swr(uint8_t* rdram, gpr offset, gpr reg, gpr val) {
 
 /**
  * @brief Convert a 64-bit ("double-precision") floating-point value into a
- * 64-bit integer (a "long") by truncating, thus cutting off any decimal places,
- * rounding towards zero and losing some precision (especially if the value
- * is very small or extremely large).
+ *        64-bit integer (a "long") by truncating, thus cutting off any decimal
+ *        places, rounding towards zero and losing some precision (especially if
+ *        the value is very small or extremely large).
  * @param[in] val `double` The value to convert.
  * @return `s64` The converted value.
  */
@@ -498,8 +498,8 @@ typedef enum ModRecompRoundingMode {
 
 /**
  * @brief A constant that you may use as a default when calling a function that
- * requires you to explicitly pass a rounding mode flag when you don't care
- * about the specifics.
+ *        requires you to explicitly pass a rounding mode flag when you don't
+ *        care about the specifics.
  */
 #define DEFAULT_ROUNDING_MODE ModRecompRoundingMode_Nearest
 
@@ -507,47 +507,67 @@ typedef enum ModRecompRoundingMode {
  * @brief Convert a 32-bit ("single-precision") floating-point value into a
  *        32-bit signed integer (a "word") using a manually specified rounding
  *        mode.
- * 
+ *
  * You probably want to use the wrapper macro `CVT_W_S` instead of calling this
  * function directly.
- * 
+ *
  * @param[in] val `float` The value to round.
  * @param[in] rounding_mode `ModRecompRoundingMode` The rounding mode to use.
  * @return `s32` The result of rounding `val` with the given `rounding_mode`.
  */
 static inline int32_t do_cvt_w_s(float val, ModRecompRoundingMode rounding_mode) {
     switch (rounding_mode) {
-        case 0: // round to nearest value
-            return (int32_t)lroundf(val);
-        case 1: // round to zero (truncate)
-            return (int32_t)val;
-        case 2: // round to positive infinity (ceil)
-            return (int32_t)ceilf(val);
-        case 3: // round to negative infinity (floor)
-            return (int32_t)floorf(val);
+        case ModRecompRoundingMode_Nearest:  return (int32_t)lroundf(val);
+        case ModRecompRoundingMode_Truncate: return (int32_t)val;
+        case ModRecompRoundingMode_Ceiling:  return (int32_t)ceilf(val);
+        case ModRecompRoundingMode_Floor:    return (int32_t)floorf(val);
     }
+    fprintf(stderr, "Invalid rounding mode! (ModRecompRoundingMode expected, got: %d)", (int)rounding_mode);
     assert(0);
     return 0;
 }
 
+/**
+ * @brief Convert a 32-bit ("single-precision") floating-point value into a
+ *        32-bit signed integer (a "word") using the default rounding mode.
+ *
+ * @param[in] val `float` The value to round.
+ * @return `s32` The result of rounding `val`.
+ */
 #define CVT_W_S(val) \
     do_cvt_w_s(val, rounding_mode)
 
-static inline int32_t do_cvt_w_d(double val, unsigned int rounding_mode) {
+/**
+ * @brief Convert a 64-bit ("double-precision") floating-point value into a
+ *        32-bit signed integer (a "word") using a manually specified rounding
+ *        mode.
+ *
+ * You probably want to use the wrapper macro `CVT_W_D` instead of calling this
+ * function directly.
+ *
+ * @param[in] val `double` The value to round.
+ * @param[in] rounding_mode `ModRecompRoundingMode` The rounding mode to use.
+ * @return `s32` The result of rounding `val` with the given `rounding_mode`.
+ */
+static inline int32_t do_cvt_w_d(double val, ModRecompRoundingMode rounding_mode) {
     switch (rounding_mode) {
-        case 0: // round to nearest value
-            return (int32_t)lround(val);
-        case 1: // round to zero (truncate)
-            return (int32_t)val;
-        case 2: // round to positive infinity (ceil)
-            return (int32_t)ceil(val);
-        case 3: // round to negative infinity (floor)
-            return (int32_t)floor(val);
+        case ModRecompRoundingMode_Nearest:  return (int32_t)lround(val);
+        case ModRecompRoundingMode_Truncate: return (int32_t)val;
+        case ModRecompRoundingMode_Ceiling:  return (int32_t)ceil(val);
+        case ModRecompRoundingMode_Floor:    return (int32_t)floor(val);
     }
+    fprintf(stderr, "Invalid rounding mode! (ModRecompRoundingMode expected, got: %d)", (int)rounding_mode);
     assert(0);
     return 0;
 }
 
+/**
+ * @brief Convert a 64-bit ("double-precision") floating-point value into a
+ *        32-bit signed integer (a "word") using the default rounding mode.
+ *
+ * @param[in] val `double` The value to round.
+ * @return `s32` The result of rounding `val`.
+ */
 #define CVT_W_D(val) \
     do_cvt_w_d(val, rounding_mode)
 
@@ -563,6 +583,7 @@ static inline int32_t do_cvt_w_d(double val, unsigned int rounding_mode) {
 /**
  * @brief A type which represents the data stored in an N64 floating-point
  *        register, allowing to access it as various different numeric types.
+ * @todo This should probably be renamed to `gpr_t`.
  */
 typedef union {
     double d;
@@ -579,6 +600,7 @@ typedef union {
 
 /**
  * @brief A type which represents the entire state of the N64 processor.
+ * @todo This should probably be renamed to `recomp_context_t`.
  */
 typedef struct {
     gpr r0,  r1,  r2,  r3,  r4,  r5,  r6,  r7,
@@ -595,48 +617,211 @@ typedef struct {
     uint8_t mips3_float_mode;
 } recomp_context;
 
-// Checks if the target is an even float register or that mips3 float mode is enabled
+/**
+ * @todo Explain *why* this is here / why someone would actually need this.
+ * @brief Check if the target is an even float register or that the MIPS3 float
+ *        mode is enabled, force stopping the game immediately and logging a
+ *        message to the terminal otherwise.
+ * @param[in] ctx `recomp_context*` The current execution context of the recomp.
+ * @param[in] idx `size_t` The index number for the register to check.
+ * @return `void` Nothing.
+ */
 #define CHECK_FR(ctx, idx) \
     assert(((idx) & 1) == 0 || (ctx)->mips3_float_mode)
 
+// Shouldn't this entire header be wrapped in an `extern "C"`-block for C++?
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+/**
+ * @todo Document whether `rdram` is an `[in]` param or an `[inout]` param.
+ * @todo Document whether `ctx` is an `[in]` param or an `[inout]` param.
+ * @brief The type of a an N64 function.
+ *
+ * This type is used for function pointers that are passed from mod code to
+ * native code. It's a pointer to the function from the native host's point
+ * of view, rather than from the N64 code's / mod code's perspective (like what
+ * you'd get by just taking a functions address inside an N64 code segment).
+ *
+ * Do note that `recomp_func_t` itself it not a pointer type.
+ *
+ * @param[in] rdram `u8*` A view into the current N64 RAM.
+ * @param[in] ctx `recomp_context*` The current execution context of the recomp.
+ * @return `void` Nothing.
+ */
 typedef void (recomp_func_t)(uint8_t* rdram, recomp_context* ctx);
 
+/**
+ * @todo Test if the returned pointer is nullable or not.
+ * @todo Test what happens when `vram` is not set to a valid function address.
+ * @todo Change the type of `vram` from `s32` to `u32` once it's been confirmed
+ *       to be bug / typo (https://github.com/Zelda64Recomp/MMRecompModTemplate/issues/10).
+ * @brief Get a pointer to a function in the virtual N64 memory.
+ *
+ * You probably want to use the wrapper macro `LOOKUP_FUNC` instead of calling this
+ * function directly.
+ *
+ * @param[inout] vram `s32` An index into N64 memory where the desired function
+ *                          is stored. This is the value you would get when
+ *                          taking the function's address on the N64 code side.
+ * @return `recomp_func_t*` A pointer to the target function that's usable by
+ *                          native host code.
+ */
 extern RECOMP_EXPORT recomp_func_t* (*get_function)(int32_t vram);
+
+/**
+ * @todo Document whether `ctx` is an `[in]` param or an `[inout]` param.
+ * @brief Write a value into the `SP_STATUS` register of the N64's RSP.
+ *
+ * This is a low-level mechanism for setting the current status of the N64's
+ * "Reality Signal Processor" (RSP) (the part of the N64's architecture which
+ * executes "microcode", if you ever head that term thrown around).
+ *
+ * See https://n64brew.dev/wiki/Reality_Signal_Processor/Interface#SP_STATUS
+ * as well as https://n64brew.dev/wiki/Reality_Signal_Processor for more
+ * information on how this works and what you can pass in for `value`.
+ *
+ * @param[in] ctx `recomp_context*` The current execution context of the recomp.
+ * @param[in] value `gpr` The value to write into the `COP0` register.
+ * @return `void` Nothing.
+ */
 extern RECOMP_EXPORT void (*cop0_status_write)(recomp_context* ctx, gpr value);
+
+/**
+ * @todo Document whether `ctx` is an `[in]` param or an `[inout]` param.
+ * @brief Read a value from the `SP_STATUS` register of the N64's RSP.
+ *
+ * This is a low-level mechanism for getting the current status of the N64's
+ * "Reality Signal Processor" (RSP) (the part of the N64's architecture which
+ * executes "microcode", if you ever head that term thrown around).
+ *
+ * See https://n64brew.dev/wiki/Reality_Signal_Processor/Interface#SP_STATUS
+ * as well as https://n64brew.dev/wiki/Reality_Signal_Processor for more
+ * information on how this works and what you can pass in for `value`.
+ *
+ * @param[in] ctx `recomp_context*` The current execution context of the recomp.
+ * @return `gpr` The current value stored in the `COP0` register.
+ */
 extern RECOMP_EXPORT gpr (*cop0_status_read)(recomp_context* ctx);
+
+/**
+ * @brief ???
+ *
+ * This is probably meant to be an error handler for when a `switch`-statement
+ * failed to match any of its specified `case`s and no `default` was provided,
+ * but I don't actually know. Ask @Mr-Wiseguy about it.
+ *
+ * @param[in] func `const char*` I'm guessing this supposed to be the name of
+ *                               the calling function where the error occured.
+ * @param[inout] vram `u32` An index into N64 memory. What does it point to? 🤷
+ * @param[in] jtbl `u32` I'm guessing this is short for "jump table", so it's a
+ *                       pointer to where `switch`-statement's jump table was
+ *                       placed in memory by the compiler.
+ * @return `void` Nothing.
+ */
 extern RECOMP_EXPORT void (*switch_error)(const char* func, uint32_t vram, uint32_t jtbl);
+
+/**
+ * @brief ???
+ *
+ * I'm guessing this is supposed to inject a breakpoint into the game or
+ * something, but to be honest, I have no idea. Ask @Mr-Wiseguy about it.
+ *
+ * @param[inout] vram `u32` An index into N64 memory. What does it point to? 🤷
+ * @return `void` Nothing.
+ */
 extern RECOMP_EXPORT void (*do_break)(uint32_t vram);
 
 #define LOOKUP_FUNC(val) \
     get_function((int32_t)(val))
 
+/**
+ * @brief ???
+ * Is there a specific reason why this is a pointer while `section_addresses` is
+ * an array? Or is this a pointer *to* `section_addresses`?
+ */
 extern RECOMP_EXPORT int32_t* reference_section_addresses;
+
+/**
+ * @brief ???
+ */
 extern RECOMP_EXPORT int32_t section_addresses[];
 
+/**
+ * @brief Get the 16 least significant bits of a number.
+ * @param[in] x A numeric value, preferably an unsigned integer with a size of
+ *              at least 16 bits to avoid things from getting "funky".
+ * @return The same type as `x`.
+ */
 #define LO16(x) \
     ((x) & 0xFFFF)
 
+/**
+ * @brief Zero out the 15 least significant bits of a number (yes, 15, not 16).
+ * @param[in] x A numeric value, preferably an unsigned integer with a size of
+ *              at least 16 bits to avoid things from getting "funky".
+ * @return The same type as `x`.
+ * @note If `x` is an expression that cannot be statically evaluated at compile
+ *       time (e.g. when it's a function call), you should assign it to a
+ *       temporary variable before passing it to this macro, as it will need to
+ *       be evaluated twice.
+ */
 #define HI16(x) \
     (((x) >> 16) + (((x) >> 15) & 1))
 
+/**
+ * @brief ???
+ * @param[in] section_index `gpr` 
+ * @param[in] offset `gpr` 
+ * @return `gpr` 
+ */
 #define RELOC_HI16(section_index, offset) \
     HI16(section_addresses[section_index] + (offset))
 
+/**
+ * @brief ???
+ * @param[in] section_index `gpr` 
+ * @param[in] offset `gpr` 
+ * @return `gpr` 
+ */
 #define RELOC_LO16(section_index, offset) \
     LO16(section_addresses[section_index] + (offset))
 
+/**
+ * @brief ???
+ * @param[in] section_index `gpr` 
+ * @param[in] offset `gpr` 
+ * @return `gpr` 
+ */
 #define REF_RELOC_HI16(section_index, offset) \
     HI16(reference_section_addresses[section_index] + (offset))
 
+/**
+ * @brief ???
+ * @param[in] section_index `gpr` 
+ * @param[in] offset `gpr` 
+ * @return `gpr` 
+ */
 #define REF_RELOC_LO16(section_index, offset) \
     LO16(reference_section_addresses[section_index] + (offset))
 
+/**
+ * @brief I'm guessing this function is called back when an attempt is made to
+ *        invoke a system call from N64/mod code, but I have no idea if that's
+ *        actually what it does.
+ * @param[inout] rdram `uint8_t*` 
+ * @param[in] ctx `recomp_context*` The current execution context of the recomp.
+ * @param[in] instruction_vram `s32` 
+ * @return `void` Nothing.
+ */
 void recomp_syscall_handler(uint8_t* rdram, recomp_context* ctx, int32_t instruction_vram);
 
+/**
+ * @brief I'm guessing this opens the recomp's pause menu (the dark-purple one)?
+ * @param[inout] rdram `uint8_t*` 
+ * @return `void` Nothing.
+ */
 void pause_self(uint8_t *rdram);
 
 #ifdef __cplusplus
