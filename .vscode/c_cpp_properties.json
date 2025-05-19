@@ -16,7 +16,7 @@
             ],
             "compilerPath": "clang",
             "cStandard": "c99",
-            "intelliSenseMode": "clang-x86"
+            "intelliSenseMode": "${default}"
         }
     ],
     "version": 4

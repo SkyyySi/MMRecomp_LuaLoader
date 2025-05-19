@@ -77,12 +77,12 @@
 #endif
 
 /**
- * This type is used whereever an N64 instruction would try to use the "General
+ * This type is used whereever an N64 instruction would try to use a "General
  * Purpose Register" (GPR) on real hardware. A value with a type of `gpr` can
- * be thought of as an integer value with an unknown size and no specified type.
+ * be thought of as an integer value with an unknown size and signedness.
  * It may be a `u64`, but it may also be an `s32`, a `u8` or a pointer (which
  * could also be either 32 or 64 bits in size, since the N64 had both a 32-bit
- * and a 64-bit register mode).
+ * and a 64-bit addressing mode).
  * @todo This should probably be renamed to `gpr_t`.
  */
 typedef uint64_t gpr;
@@ -469,14 +469,53 @@ static inline void do_swr(uint8_t* rdram, gpr offset, gpr reg, gpr val) {
     ((int64_t)(val))
 
 /**
+ * @brief A type representing the possible ways to round a floating-point value,
+ *        converting it to an integer.
+ */
+typedef enum ModRecompRoundingMode {
+    /**
+     * @brief Performs mathemathically correct rounding to the nearest integer.
+     */
+    ModRecompRoundingMode_Nearest = 0U,
+    /**
+     * @brief Round towards zero. Rounds down for positive values and rounds up
+     *        for negative values.
+     * 
+     * This is usually the fastest rounding method, as it can directly cast the
+     * given floating-point value into an integer without calling any math
+     * functions from the C standard library first.
+     */
+    ModRecompRoundingMode_Truncate = 1U,
+    /**
+     * @brief Round up towards positive infinity.
+     */
+    ModRecompRoundingMode_Ceiling = 2U,
+    /**
+     * @brief Round down towards negative infinity.
+     */
+    ModRecompRoundingMode_Floor = 3U,
+} ModRecompRoundingMode;
+
+/**
  * @brief A constant that you may use as a default when calling a function that
  * requires you to explicitly pass a rounding mode flag when you don't care
  * about the specifics.
- * @todo This should be replaced by an `enum`.
  */
-#define DEFAULT_ROUNDING_MODE 0
+#define DEFAULT_ROUNDING_MODE ModRecompRoundingMode_Nearest
 
-static inline int32_t do_cvt_w_s(float val, unsigned int rounding_mode) {
+/**
+ * @brief Convert a 32-bit ("single-precision") floating-point value into a
+ *        32-bit signed integer (a "word") using a manually specified rounding
+ *        mode.
+ * 
+ * You probably want to use the wrapper macro `CVT_W_S` instead of calling this
+ * function directly.
+ * 
+ * @param[in] val `float` The value to round.
+ * @param[in] rounding_mode `ModRecompRoundingMode` The rounding mode to use.
+ * @return `s32` The result of rounding `val` with the given `rounding_mode`.
+ */
+static inline int32_t do_cvt_w_s(float val, ModRecompRoundingMode rounding_mode) {
     switch (rounding_mode) {
         case 0: // round to nearest value
             return (int32_t)lroundf(val);
