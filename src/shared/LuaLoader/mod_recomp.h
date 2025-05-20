@@ -603,17 +603,48 @@ typedef union {
  * @todo This should probably be renamed to `recomp_context_t`.
  */
 typedef struct {
+    /**
+     * General purpose registers.
+     */
     gpr r0,  r1,  r2,  r3,  r4,  r5,  r6,  r7,
         r8,  r9,  r10, r11, r12, r13, r14, r15,
         r16, r17, r18, r19, r20, r21, r22, r23,
         r24, r25, r26, r27, r28, r29, r30, r31;
+
+    /**
+     * Floating-point registers.
+     */
     fpr f0,  f1,  f2,  f3,  f4,  f5,  f6,  f7,
         f8,  f9,  f10, f11, f12, f13, f14, f15,
         f16, f17, f18, f19, f20, f21, f22, f23,
         f24, f25, f26, f27, f28, f29, f30, f31;
+
+    /**
+     * The high and low registers are used for certain arithmetic operations
+     * like integer multiplication, where the output may be way to large to fit
+     * into a single 64-bit register. These are essentially used as if they were
+     * a single, 128-bit-wide register.
+    */
     uint64_t hi, lo;
+
+    /**
+     * Pointer to the odd-numbered halves of paired single-precision FPRs. Used
+     * for operations in 32-bit mode.
+     */
     uint32_t* f_odd;
+
+    /**
+     * @todo This should be made into an `enum`.
+     * Status register of the CPU (coprocessor 0 status register). Controls
+     * system-level state like interrupt masking, exception mode, etc.
+     */
     uint32_t status_reg;
+
+    /**
+     * @todo This should be made into an `enum`.
+     * Indicates whether the FPU is in 64-bit or 32-bit mode.
+     * This affects how FP registers and operations are interpreted.
+     */
     uint8_t mips3_float_mode;
 } recomp_context;
 
@@ -736,32 +767,47 @@ extern RECOMP_EXPORT void (*do_break)(uint32_t vram);
 #define LOOKUP_FUNC(val) \
     get_function((int32_t)(val))
 
+// Some of the comments below have been written by ChatGPT.
+
 /**
- * @brief ???
- * Is there a specific reason why this is a pointer while `section_addresses` is
- * an array? Or is this a pointer *to* `section_addresses`?
+ * @brief Reference base addresses for each section in the original / reference
+ *        binary.
+ *
+ * This array points to the original section base addresses, used for comparison
+ * or reference during relocation processing or recompiled code generation.
  */
 extern RECOMP_EXPORT int32_t* reference_section_addresses;
 
 /**
- * @brief ???
+ * @brief Base addresses of recompiled sections.
+ *
+ * This array holds the relocated base addresses for each code or data section
+ * in the recompiled binary.
  */
 extern RECOMP_EXPORT int32_t section_addresses[];
 
 /**
  * @brief Get the 16 least significant bits of a number.
+ *
+ * Used to obtain the immediate value for MIPS instructions like `ori` when
+ * reconstructing a full 32-bit address in two parts.
+ *
  * @param[in] x A numeric value, preferably an unsigned integer with a size of
- *              at least 16 bits to avoid things from getting "funky".
- * @return The same type as `x`.
+ *              at least 32 bits to avoid things from getting "funky".
+ * @return The lower 16 bits of `x`, stored as the same type as `x`.
  */
 #define LO16(x) \
     ((x) & 0xFFFF)
 
 /**
  * @brief Zero out the 15 least significant bits of a number (yes, 15, not 16).
+ *
+ * MIPS uses a trick when splitting 32-bit addresses to handle carry-over from
+ * the low 16 bits. This macro computes the correct upper 16 bits for `lui` instructions.
+ *
  * @param[in] x A numeric value, preferably an unsigned integer with a size of
  *              at least 16 bits to avoid things from getting "funky".
- * @return The same type as `x`.
+ * @return The upper bits of `x`, stored as the same type as `x`.
  * @note If `x` is an expression that cannot be statically evaluated at compile
  *       time (e.g. when it's a function call), you should assign it to a
  *       temporary variable before passing it to this macro, as it will need to
@@ -771,37 +817,54 @@ extern RECOMP_EXPORT int32_t section_addresses[];
     (((x) >> 16) + (((x) >> 15) & 1))
 
 /**
- * @brief ???
- * @param[in] section_index `gpr` 
- * @param[in] offset `gpr` 
- * @return `gpr` 
+ * @brief Computes the adjusted upper 16 bits of a relocated address for a given
+ *        section.
+ *
+ * Used to generate the immediate value for a `lui` instruction in recompiled
+ * MIPS code.
+ *
+ * @param[in] section_index `gpr` Index into `section_addresses` array.
+ * @param[in] offset `gpr` Offset within the section.
+ * @return `gpr` Adjusted upper 16 bits of the relocated address.
  */
 #define RELOC_HI16(section_index, offset) \
     HI16(section_addresses[section_index] + (offset))
 
 /**
- * @brief ???
- * @param[in] section_index `gpr` 
- * @param[in] offset `gpr` 
- * @return `gpr` 
+ * @brief Extracts the lower 16 bits of a relocated address for a given section.
+ *
+ * Used to generate the immediate value for an `ori` instruction in recompiled MIPS code.
+ *
+ * @param[in] section_index `gpr` Index into `section_addresses` array.
+ * @param[in] offset `gpr` Offset within the section.
+ * @return `gpr` Lower 16 bits of the relocated address.
  */
 #define RELOC_LO16(section_index, offset) \
     LO16(section_addresses[section_index] + (offset))
 
 /**
- * @brief ???
- * @param[in] section_index `gpr` 
- * @param[in] offset `gpr` 
- * @return `gpr` 
+ * @brief Computes the adjusted upper 16 bits of a reference (original) address
+ *        for a section.
+ *
+ * Useful for validation or symbol resolution against the original binary layout.
+ *
+ * @param[in] section_index `gpr` Index into `reference_section_addresses` array.
+ * @param[in] offset `gpr` Offset within the section.
+ * @return `gpr` Adjusted upper 16 bits of the reference address.
  */
 #define REF_RELOC_HI16(section_index, offset) \
     HI16(reference_section_addresses[section_index] + (offset))
 
 /**
- * @brief ???
- * @param[in] section_index `gpr` 
- * @param[in] offset `gpr` 
- * @return `gpr` 
+ * @brief Extracts the lower 16 bits of a reference (original) address for a
+ *        section.
+ *
+ * Useful for validation or symbol resolution against the original binary
+ * layout.
+ *
+ * @param[in] section_index `gpr` Index into `reference_section_addresses` array.
+ * @param[in] offset `gpr` Offset within the section.
+ * @return `gpr` Lower 16 bits of the reference address.
  */
 #define REF_RELOC_LO16(section_index, offset) \
     LO16(reference_section_addresses[section_index] + (offset))
