@@ -173,8 +173,24 @@ void print_hook_func_args(const Actor *restrict const thisx, const PlayState *re
 	Actor_Kill(thisx);
 } */
 
-PREEXEC(EnBombers_Update) void preexec_EnBombers_Update(Actor *thisx, PlayState *play) {
+#define HOOK_FUNCTION_CALL(FUNCTION_NAME) \
+PREEXEC(FUNCTION_NAME) void HOOK_FUNCTION_CALL_IMPL__##FUNCTION_NAME(u32 arg1, u32 arg2, u32 arg3) { \
+	recomp_printf(#FUNCTION_NAME"(0x%08x, 0x%08x, 0x%08x);\n", arg1, arg2, arg3); \
+}
+
+//HOOK_FUNCTION_CALL(Sram_OpenSave);
+
+PREEXEC(FileSelect_LoadGame) void PREEXEC_FileSelect_LoadGame(GameState *thisx) {
+	// 0 for File 1 and 1 for File 2
+	s16 selectedFileIndex = *((s16*)(((u8*)thisx) + 0x2448EUL));
+	recomp_printf("FileSelect_LoadGame(thisx=0x%08x); --> selectedFileIndex=0x%08x\n", thisx, selectedFileIndex);
+}
+PREEXEC(Sram_OpenSave) void PREEXEC_Sram_OpenSave(struct FileSelectState *fileSelect, SramContext *sramCtx) {
+	recomp_printf("Sram_OpenSave(fileSelect=0x%08x, sramCtx=0x%08x);\n", fileSelect, sramCtx);
+}
+
+/* PREEXEC(EnBombers_Update) void preexec_EnBombers_Update(Actor *thisx, PlayState *play) {
 	print_hook_func_args(thisx, play, "EnBombers_Update");
 
 	//Actor_Kill(thisx);
-}
+} */
