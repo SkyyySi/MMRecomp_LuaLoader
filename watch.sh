@@ -117,6 +117,8 @@ function rebuild_game() {
 	make -j "$(nproc)" || return 1
 	RecompModTool './mod.toml' './build' || return 1
 
+	log 'Starting game...'
+
 	{
 		flatpak run \
 			--command='/app/bin/Zelda64Recompiled' \

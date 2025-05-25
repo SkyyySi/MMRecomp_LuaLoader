@@ -583,7 +583,7 @@ static inline int32_t do_cvt_w_d(double val, ModRecompRoundingMode rounding_mode
 /**
  * @brief A type which represents the data stored in an N64 floating-point
  *        register, allowing to access it as various different numeric types.
- * @todo This should probably be renamed to `gpr_t`.
+ * @todo This should probably be renamed to `fpr_t`.
  */
 typedef union {
     double d;
@@ -604,20 +604,327 @@ typedef union {
  */
 typedef struct {
     /**
-     * General purpose registers.
+     * Constant zero register. Always reads as 0. Writes are ignored.
      */
-    gpr r0,  r1,  r2,  r3,  r4,  r5,  r6,  r7,
-        r8,  r9,  r10, r11, r12, r13, r14, r15,
-        r16, r17, r18, r19, r20, r21, r22, r23,
-        r24, r25, r26, r27, r28, r29, r30, r31;
+    gpr r0;
 
     /**
-     * Floating-point registers.
+     * Assembler temporary register. Not preserved across calls.
      */
-    fpr f0,  f1,  f2,  f3,  f4,  f5,  f6,  f7,
-        f8,  f9,  f10, f11, f12, f13, f14, f15,
-        f16, f17, f18, f19, f20, f21, f22, f23,
-        f24, f25, f26, f27, f28, f29, f30, f31;
+    gpr r1;
+
+    /**
+     * Function return value or expression result. Also used as argument for
+	 * leaf functions.
+     */
+    gpr r2;
+
+    /**
+     * Secondary return value register.
+     */
+    gpr r3;
+
+    /**
+     * First argument register, used to pass arguments to functions.
+     */
+    gpr r4;
+
+    /**
+     * Second argument register.
+     */
+    gpr r5;
+
+    /**
+     * Third argument register.
+     */
+    gpr r6;
+
+    /**
+     * Fourth argument register.
+     */
+    gpr r7;
+
+    /**
+     * Temporary register. Not preserved across function calls.
+     */
+    gpr r8;
+
+    /**
+     * Temporary register. Not preserved across function calls.
+     */
+    gpr r9;
+
+    /**
+     * Temporary register. Not preserved across function calls.
+     */
+    gpr r10;
+
+    /**
+     * Temporary register. Not preserved across function calls.
+     */
+    gpr r11;
+
+    /**
+     * Temporary register. Not preserved across function calls.
+     */
+    gpr r12;
+
+    /**
+     * Temporary register. Not preserved across function calls.
+     */
+    gpr r13;
+
+    /**
+     * Temporary register. Not preserved across function calls.
+     */
+    gpr r14;
+
+    /**
+     * Temporary register. Not preserved across function calls.
+     */
+    gpr r15;
+
+    /**
+     * Saved register. Preserved across function calls.
+     */
+    gpr r16;
+
+    /**
+     * Saved register. Preserved across function calls.
+     */
+    gpr r17;
+
+    /**
+     * Saved register. Preserved across function calls.
+     */
+    gpr r18;
+
+    /**
+     * Saved register. Preserved across function calls.
+     */
+    gpr r19;
+
+    /**
+     * Saved register. Preserved across function calls.
+     */
+    gpr r20;
+
+    /**
+     * Saved register. Preserved across function calls.
+     */
+    gpr r21;
+
+    /**
+     * Saved register. Preserved across function calls.
+     */
+    gpr r22;
+
+    /**
+     * Saved register. Preserved across function calls.
+     */
+    gpr r23;
+
+    /**
+     * Temporary register. Not preserved across function calls.
+     */
+    gpr r24;
+
+    /**
+     * Temporary register. Not preserved across function calls.
+     */
+    gpr r25;
+
+    /**
+     * Reserved for OS kernel. Do not use.
+     */
+    gpr r26;
+
+    /**
+     * Reserved for OS kernel. Do not use.
+     */
+    gpr r27;
+
+    /**
+     * Global pointer (gp) used for addressing static data.
+     */
+    gpr r28;
+
+    /**
+     * Stack pointer (sp) used to manage the call stack.
+     */
+    gpr r29;
+
+    /**
+     * Frame pointer (fp) or another saved register depending on calling
+	 * convention.
+     */
+    gpr r30;
+
+    /**
+     * Return address (ra) used for storing the function return address.
+     */
+    gpr r31;
+
+    /**
+     * Floating-point register f0, often used for temporary values.
+     */
+    fpr f0;
+
+    /**
+     * Floating-point register f1, used for temporary computations.
+     */
+    fpr f1;
+
+    /**
+     * Floating-point register f2, used for intermediate floating-point results.
+     */
+    fpr f2;
+
+    /**
+     * Floating-point register f3, used for intermediate floating-point results.
+     */
+    fpr f3;
+
+    /**
+     * Floating-point register f4, used for intermediate floating-point results.
+     */
+    fpr f4;
+
+    /**
+     * Floating-point register f5, general-purpose FP temporary.
+     */
+    fpr f5;
+
+    /**
+     * Floating-point register f6, general-purpose FP temporary.
+     */
+    fpr f6;
+
+    /**
+     * Floating-point register f7, general-purpose FP temporary.
+     */
+    fpr f7;
+
+    /**
+     * Floating-point register f8, general-purpose FP temporary.
+     */
+    fpr f8;
+
+    /**
+     * Floating-point register f9, general-purpose FP temporary.
+     */
+    fpr f9;
+
+    /**
+     * Floating-point register f10, general-purpose FP temporary.
+     */
+    fpr f10;
+
+    /**
+     * Floating-point register f11, general-purpose FP temporary.
+     */
+    fpr f11;
+
+    /**
+     * Floating-point register f12, used for function argument or return value.
+     */
+    fpr f12;
+
+    /**
+     * Floating-point register f13, used for function argument or return value.
+     */
+    fpr f13;
+
+    /**
+     * Floating-point register f14, general-purpose FP value.
+     */
+    fpr f14;
+
+    /**
+     * Floating-point register f15, general-purpose FP value.
+     */
+    fpr f15;
+
+    /**
+     * Floating-point register f16, general-purpose FP value.
+     */
+    fpr f16;
+
+    /**
+     * Floating-point register f17, general-purpose FP value.
+     */
+    fpr f17;
+
+    /**
+     * Floating-point register f18, general-purpose FP value.
+     */
+    fpr f18;
+
+    /**
+     * Floating-point register f19, general-purpose FP value.
+     */
+    fpr f19;
+
+    /**
+     * Floating-point register f20, general-purpose FP value.
+     */
+    fpr f20;
+
+    /**
+     * Floating-point register f21, general-purpose FP value.
+     */
+    fpr f21;
+
+    /**
+     * Floating-point register f22, general-purpose FP value.
+     */
+    fpr f22;
+
+    /**
+     * Floating-point register f23, general-purpose FP value.
+     */
+    fpr f23;
+
+    /**
+     * Floating-point register f24, general-purpose FP value.
+     */
+    fpr f24;
+
+    /**
+     * Floating-point register f25, general-purpose FP value.
+     */
+    fpr f25;
+
+    /**
+     * Floating-point register f26, general-purpose FP value.
+     */
+    fpr f26;
+
+    /**
+     * Floating-point register f27, general-purpose FP value.
+     */
+    fpr f27;
+
+    /**
+     * Floating-point register f28, general-purpose FP value.
+     */
+    fpr f28;
+
+    /**
+     * Floating-point register f29, general-purpose FP value.
+     */
+    fpr f29;
+
+    /**
+     * Floating-point register f30, general-purpose FP value.
+     */
+    fpr f30;
+
+    /**
+     * Floating-point register f31, often used as a return value register or
+     * temporary.
+     */
+    fpr f31;
 
     /**
      * The high and low registers are used for certain arithmetic operations

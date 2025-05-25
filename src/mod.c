@@ -3,11 +3,13 @@
 #include "recomputils.h"
 #include "recompconfig.h"
 
-//#include "./shared/LuaLoader/lib.h"
+#include "./shared/LuaLoader/lib.h"
 
-#define PREEXEC(FUNCTION_NAME) RECOMP_HOOK(#FUNCTION_NAME)
+#define PREEXEC(FUNCTION_NAME, FUNCTION_ARGS) \
+void FUNCTION_NAME FUNCTION_ARGS; \
+RECOMP_HOOK(#FUNCTION_NAME) void PREEXEC_RECOMP_IMPL__ ## FUNCTION_NAME ## __ FUNCTION_ARGS
 
-#define WITH_SIZE(STRING_LITERAL) (STRING_LITERAL), (sizeof(STRING_LITERAL))
+#define WITH_SIZE(STRING_LITERAL) (STRING_LITERAL), ((size_t)(sizeof(STRING_LITERAL)))
 
 #define LOG(...) { \
 	recomp_printf("\e[1;32m>>>\e[22;39m "); \
@@ -17,6 +19,28 @@
 
 #define LOG_TYPE_SIZE(TYPE) \
 LOG("sizeof("#TYPE") = %llu", sizeof(TYPE));
+
+#define PRINTF_S8  "(" "\e[3;33m" "s8"  "\e[23;39m" ")" "\e[36m" "%hd"          "\e[39m"
+#define PRINTF_S16 "(" "\e[3;33m" "s16" "\e[23;39m" ")" "\e[35m" "%d"           "\e[39m"
+#define PRINTF_S32 "(" "\e[3;33m" "s32" "\e[23;39m" ")" "\e[34m" "%ldL"         "\e[39m"
+#define PRINTF_S64 "(" "\e[3;33m" "s64" "\e[23;39m" ")" "\e[33m" "%lldLL"       "\e[39m"
+#define PRINTF_U8  "(" "\e[3;33m" "u8"  "\e[23;39m" ")" "\e[36m" "0x%02xU"      "\e[39m"
+#define PRINTF_U16 "(" "\e[3;33m" "u16" "\e[23;39m" ")" "\e[35m" "0x%04xU"      "\e[39m"
+#define PRINTF_U32 "(" "\e[3;33m" "u32" "\e[23;39m" ")" "\e[34m" "0x%08lxUL"    "\e[39m"
+#define PRINTF_U64 "(" "\e[3;33m" "u64" "\e[23;39m" ")" "\e[33m" "0x%016llxULL" "\e[39m"
+#define PRINTF_F32 "(" "\e[3;33m" "f32" "\e[23;39m" ")" "\e[34m" "%.7gf"        "\e[39m"
+#define PRINTF_F64 "(" "\e[3;33m" "f64" "\e[23;39m" ")" "\e[33m" "%.14g"        "\e[39m"
+
+#define PRINTF_PTR "\e[1;3;31m" "0x%08x" "\e[22;23;39m"
+
+#define PRINTF_VEC3F "(" "\e[1;3;36m" "Vec3f" "\e[22;23;39m" ")" "{ "\
+"\e[35m.\e[31mx \e[35m=\e[39m "PRINTF_F32", " \
+"\e[35m.\e[31my \e[35m=\e[39m "PRINTF_F32", " \
+"\e[35m.\e[31mz \e[35m=\e[39m "PRINTF_F32 \
+" }"
+
+#define PRINT_STRUCT_MEMBER(STRUCT_PTR, MEMBER_TYPE_ID, MEMBER_NAME, PADDING) \
+recomp_printf("    \e[35m.\e[31m" #MEMBER_NAME "\e[39m" PADDING "\e[35m=\e[39m " PRINTF_ ## MEMBER_TYPE_ID "\e[0m,\n", (STRUCT_PTR)->MEMBER_NAME);
 
 /*
 sizeof(char) = 1
@@ -34,12 +58,23 @@ sizeof(u32) = 4
 sizeof(u64) = 8
 */
 
-RECOMP_IMPORT(".", u32 LuaLoader_Init(void));
-
-/* static void format_bits_u64(u64 x, char *out_buffer, unsigned long buffer_size) {
-	if ((out_buffer == NULL) || (buffer_size < 72)) {
+static void format_bits_u64(const u64 *restrict const x_ptr, char *restrict const out_buffer, const size_t buffer_size) {
+	if (x_ptr == NULL) {
+		LOG("Value of `x_ptr` is NULL!");
 		return;
 	}
+
+	if (out_buffer == NULL) {
+		LOG("Value of `out_buffer` is NULL!");
+		return;
+	}
+
+	if (buffer_size < 72) {
+		LOG("Value of `buffer_size` must be greater than or equal to 72! (got: %u)", buffer_size);
+		return;
+	}
+
+	const u64 x = *x_ptr;
 
 	int offset = 0;
 	for (int i = 0; i < 64; i++) {
@@ -47,44 +82,59 @@ RECOMP_IMPORT(".", u32 LuaLoader_Init(void));
 
 		if ((i > 0) && ((i % 8) == 7)) {
 			offset++;
-			out_buffer[i + offset] = '.';
+			out_buffer[i + offset] = '\'';
 		}
 	}
 
 	out_buffer[buffer_size - 1] = '\0';
-} */
+}
+
+#define SPLIT_DOUBLEWORD(VALUE) \
+((u32)(((u64)(VALUE)) & ((u64)(0xFFFFFFFF)))), ((u32)((((u64)(VALUE)) >> ((u64)(32))) & ((u64)(0xFFFFFFFF))))
 
 /* RECOMP_HOOK("Player_Init") void my_player_init_hook(Actor *thisx, PlayState *play) {
-	char bits[72];
+	Lua L = LuaLoader_Init();
 
-	u32 L = LuaLoader_Init();
-	format_bits_u64(L, WITH_SIZE(bits));
-	LOG("0x%016lx || 0b%s || %20lu", L, bits, L);
+	char bits[72];
+	format_bits_u64(&L, WITH_SIZE(bits));
+	LOG("0x%016llx || 0b%s || %20llu", L, bits, L);
+
+	LuaLoader_InvokeScriptCode_Args *invoke_script_args =
+		(LuaLoader_InvokeScriptCode_Args *)recomp_alloc(sizeof(LuaLoader_InvokeScriptCode_Args));
+	//invoke_script_args->L = L;
+	invoke_script_args->L_low  = ((u32)(((u64)(L)) & ((u64)(0xFFFFFFFF))));
+	invoke_script_args->L_high = ((u32)((((u64)(L)) >> ((u64)(32))) & ((u64)(0xFFFFFFFF))));
+	invoke_script_args->script_code = "print('Hello, world!')";
+	invoke_script_args->script_code_size = sizeof("print('Hello, world!')");
+	LOG("invoke_script_args = "PRINTF_PTR, invoke_script_args);
+	LuaLoader_InvokeScriptCode(invoke_script_args);
+
+	//LuaLoader_Deinit(L);
+	LuaLoader_Deinit(SPLIT_DOUBLEWORD(L));
 } */
 
-//#define PRINTF_ 
+RECOMP_HOOK("Player_Init") void my_player_init_hook(Actor *thisx, PlayState *play) {
+	Lua L = LuaLoader_Init();
 
-#define PRINTF_S8  "(" "\e[33m" "s8"  "\e[39m" ")" "\e[3;36m" "%hd"        "\e[23;39m"
-#define PRINTF_S16 "(" "\e[33m" "s16" "\e[39m" ")" "\e[3;35m" "%d"         "\e[23;39m"
-#define PRINTF_S32 "(" "\e[33m" "s32" "\e[39m" ")" "\e[3;34m" "%ldL"       "\e[23;39m"
-#define PRINTF_S64 "(" "\e[33m" "s64" "\e[39m" ")" "\e[3;33m" "%lldLL"     "\e[23;39m"
-#define PRINTF_U8  "(" "\e[33m" "u8"  "\e[39m" ")" "\e[3;36m" "0x%02xU"    "\e[23;39m"
-#define PRINTF_U16 "(" "\e[33m" "u16" "\e[39m" ")" "\e[3;35m" "0x%04xU"    "\e[23;39m"
-#define PRINTF_U32 "(" "\e[33m" "u32" "\e[39m" ")" "\e[3;34m" "0x%08xULL"  "\e[23;39m"
-#define PRINTF_U64 "(" "\e[33m" "u64" "\e[39m" ")" "\e[3;33m" "0x%016xULL" "\e[23;39m"
-#define PRINTF_F32 "(" "\e[33m" "f32" "\e[39m" ")" "\e[3;34m" "%.7gf"      "\e[23;39m"
-#define PRINTF_F64 "(" "\e[33m" "f64" "\e[39m" ")" "\e[3;33m" "%.14g"      "\e[23;39m"
+	char bits[72];
+	format_bits_u64(&L, WITH_SIZE(bits));
+	LOG("0x%016llx || 0b%s || %20llu", L, bits, L);
 
-#define PRINTF_PTR "\e[1;3;31m" "0x%08xLU" "\e[22;23;39m"
+	const char script_code[] = "print('Hello, world!')";
+	LuaLoader_InvokeScriptCode_Args invoke_script_args = { L, script_code, sizeof(script_code) };
+	LOG("&invoke_script_args = "PRINTF_PTR, &invoke_script_args)
+	LuaLoader_InvokeScriptCode(&invoke_script_args);
 
-#define PRINTF_VEC3F "(Vec3f){ .x = "PRINTF_F32", .y = "PRINTF_F32", .z = "PRINTF_F32" }"
+	LuaLoader_Deinit(SPLIT_DOUBLEWORD(L));
+}
 
 void print_actor_info(const Actor *restrict const thisx) {
 	// Using seperate calls to `recomp_printf()` for each line of displayed text
 	// prevents issues cause by reaching stack size limits.
 
 	recomp_printf("*("PRINTF_PTR") == (Actor){\n", thisx);
-	recomp_printf("    " "\e[35m" "." "\e[31m" "id" "\e[39m" "                     " "\e[35m" "=" "\e[39m" " " PRINTF_S16        ",\n", thisx->id);
+	//recomp_printf("    " "\e[35m" "." "\e[31m" "id" "\e[39m" "                     " "\e[35m" "=" "\e[39m" " " PRINTF_S16        ",\n", thisx->id);
+	PRINT_STRUCT_MEMBER(thisx, S16, id, "                     ");
 	recomp_printf("    " "\e[35m" "." "\e[31m" "category" "\e[39m" "               " "\e[35m" "=" "\e[39m" " " PRINTF_U8         ",\n", thisx->category);
 	recomp_printf("    " "\e[35m" "." "\e[31m" "room" "\e[39m" "                   " "\e[35m" "=" "\e[39m" " " PRINTF_S8         ",\n", thisx->room);
 	recomp_printf("    " "\e[35m" "." "\e[31m" "flags" "\e[39m" "                  " "\e[35m" "=" "\e[39m" " " PRINTF_U32        ",\n", thisx->flags);
@@ -163,33 +213,34 @@ void print_hook_func_args(const Actor *restrict const thisx, const PlayState *re
 	print_actor_info(thisx);
 }
 
-/* PREEXEC(Player_Init) void preexec_Player_Init(Actor *thisx, PlayState *play) {
+/* PREEXEC(Player_Init, (Actor *thisx, PlayState *play)) {
 	static int counter = 0;
 	counter++;
-	if (counter <= 2) return;
+	if (counter <= 1) return;
 
 	print_hook_func_args(thisx, play, "Player_Init");
 
-	Actor_Kill(thisx);
+	//Actor_Kill(thisx);
 } */
 
-#define HOOK_FUNCTION_CALL(FUNCTION_NAME) \
-PREEXEC(FUNCTION_NAME) void HOOK_FUNCTION_CALL_IMPL__##FUNCTION_NAME(u32 arg1, u32 arg2, u32 arg3) { \
+/* #define HOOK_FUNCTION_CALL(FUNCTION_NAME) \
+RECOMP_HOOK(#FUNCTION_NAME) void HOOK_FUNCTION_CALL_IMPL__ ## FUNCTION_NAME ## __(u32 arg1, u32 arg2, u32 arg3) { \
 	recomp_printf(#FUNCTION_NAME"(0x%08x, 0x%08x, 0x%08x);\n", arg1, arg2, arg3); \
 }
 
 //HOOK_FUNCTION_CALL(Sram_OpenSave);
 
-PREEXEC(FileSelect_LoadGame) void PREEXEC_FileSelect_LoadGame(GameState *thisx) {
+PREEXEC(FileSelect_LoadGame, (GameState *thisx)) {
 	// 0 for File 1 and 1 for File 2
 	s16 selectedFileIndex = *((s16*)(((u8*)thisx) + 0x2448EUL));
 	recomp_printf("FileSelect_LoadGame(thisx=0x%08x); --> selectedFileIndex=0x%08x\n", thisx, selectedFileIndex);
 }
-PREEXEC(Sram_OpenSave) void PREEXEC_Sram_OpenSave(struct FileSelectState *fileSelect, SramContext *sramCtx) {
-	recomp_printf("Sram_OpenSave(fileSelect=0x%08x, sramCtx=0x%08x);\n", fileSelect, sramCtx);
-}
 
-/* PREEXEC(EnBombers_Update) void preexec_EnBombers_Update(Actor *thisx, PlayState *play) {
+PREEXEC(Sram_OpenSave, (struct FileSelectState *fileSelect, SramContext *sramCtx)) {
+	recomp_printf("Sram_OpenSave(fileSelect=0x%08x, sramCtx=0x%08x);\n", fileSelect, sramCtx);
+} */
+
+/* PREEXEC(EnBombers_Update, (Actor *thisx, PlayState *play)) {
 	print_hook_func_args(thisx, play, "EnBombers_Update");
 
 	//Actor_Kill(thisx);
