@@ -121,8 +121,14 @@ RECOMP_HOOK("Player_Init") void my_player_init_hook(Actor *thisx, PlayState *pla
 	LOG("0x%016llx || 0b%s || %20llu", L, bits, L);
 
 	const char script_code[] = "print('Hello, world!')";
-	LuaLoader_InvokeScriptCode_Args invoke_script_args = { L, script_code, sizeof(script_code) };
-	LOG("&invoke_script_args = "PRINTF_PTR, &invoke_script_args)
+	LOG("script_code = "PRINTF_PTR" -> \"%s\"", script_code, script_code);
+	LuaLoader_InvokeScriptCode_Args invoke_script_args = {
+		(u32)((L >>  0ULL) & 0xFFFFFFFFULL),
+		(u32)((L >> 32ULL) & 0xFFFFFFFFULL),
+		script_code,
+		sizeof(script_code),
+	};
+	LOG("&invoke_script_args = "PRINTF_PTR, &invoke_script_args);
 	LuaLoader_InvokeScriptCode(&invoke_script_args);
 
 	LuaLoader_Deinit(SPLIT_DOUBLEWORD(L));

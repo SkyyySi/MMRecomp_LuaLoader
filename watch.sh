@@ -120,9 +120,10 @@ function rebuild_game() {
 	log 'Starting game...'
 
 	{
-		flatpak run \
-			--command='/app/bin/Zelda64Recompiled' \
-			'io.github.zelda64recomp.zelda64recomp'
+		#flatpak run \
+		#	--command='/app/bin/Zelda64Recompiled' \
+		#	'io.github.zelda64recomp.zelda64recomp'
+		(cd "$HOME/Zelda64Recompiled" && './Zelda64Recompiled')
 
 		local -i exit_code="$?"
 

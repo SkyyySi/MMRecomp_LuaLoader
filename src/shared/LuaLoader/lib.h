@@ -20,8 +20,8 @@ typedef u64 Lua;
 
 typedef struct {
 	//union {
-		Lua L;
-	//	u32 L_low, L_high;
+	//	Lua L;
+		u32 L_low, L_high;
 	//};
 	const char *script_code;
 	size_t script_code_size;

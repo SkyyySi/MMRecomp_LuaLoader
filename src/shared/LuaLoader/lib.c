@@ -16,13 +16,19 @@
 #include "./utils/return.h"
 #include "./utils/types.h"
 
+#define JOIN_WORDS(LOW, HIGH) \
+((u64)(((u64)(LOW) & 0xFFFFFFFFULL) | ((((u64)(HIGH)) & 0xFFFFFFFFULL) << 32ULL)))
+
+#define SWAP_LOW_HIGH(VALUE) \
+((u64)(((((u64)(VALUE)) & 0xFFFFFFFFULL) << 32ULL) | ((((u64)(VALUE)) >> 32ULL) & 0xFFFFFFFFULL)))
+
 RECOMP_EXPORT const u32 recomp_api_version = 1;
 
 static u32 counter = 0UL;
 
 RECOMP_EXPORT void LuaLoader_Init(u8 *rdram, recomp_context *ctx) {
 	char *str = NULL;
-	if (try_get_array_argument(rdram, ctx, malloc, 0, &str, NULL, sizeof(char))) {
+	if (try_get_array_argument(rdram, ctx, malloc, 0, &str, sizeof(char))) {
 		LOG("str = \"%s\"", str);
 		free(str);
 	}
@@ -43,9 +49,6 @@ RECOMP_EXPORT void LuaLoader_Init(u8 *rdram, recomp_context *ctx) {
 	RETURN_INT(ctx, L);
 }
 
-#define JOIN_WORDS(LOW, HIGH) \
-(((u64)(u32)(LOW)) | (((u64)(u32)(HIGH)) << ((u64)32)))
-
 RECOMP_EXPORT void LuaLoader_Deinit(u8 *rdram, recomp_context *ctx) {
 	lua_State *L = (lua_State *)JOIN_WORDS(ctx->r4, ctx->r5);
 	//LOG("lua_State *L = %p", L);
@@ -58,7 +61,8 @@ RECOMP_EXPORT void LuaLoader_Deinit(u8 *rdram, recomp_context *ctx) {
 }
 
 typedef struct {
-	u64 L;
+			u32 L_low;
+			u32 L_high;
 	u32 script_code;
 	u32 script_code_size;
 } LuaLoader_InvokeScriptCode_Args;
@@ -72,26 +76,34 @@ RECOMP_EXPORT void LuaLoader_InvokeScriptCode(u8 *rdram, recomp_context *ctx) {
 	LuaLoader_InvokeScriptCode_Args args = *args_ptr;
 
 	LOG("&args                 = 0x%016"PRIx64, (u64)(&args));
-	LOG("args.L                = 0x%016"PRIx64, args.L);
+	//LOG("args.L                = 0x%016"PRIx64, SWAP_LOW_HIGH(args.L));
+	LOG("args.L_low / .L_high  = 0x%016"PRIx64, JOIN_WORDS(args.L_low, args.L_high));
 	LOG("args.script_code      = 0x%08" PRIx32, args.script_code);
-	LOG("args.script_code_size = 0x%08" PRIx32, args.script_code_size);
+	LOG("args.script_code_size = %10"PRIu32, args.script_code_size);
 	//LOG("args.script_code      = \"%s\"" , MEM_B(args.script_code, 0));
 
-	lua_State *L = (lua_State *)args.L;
+	//lua_State *L = (lua_State *)args.L;
+	lua_State *L = (lua_State *)JOIN_WORDS(args.L_low, args.L_high);
 	char *script_code = NULL;
 	size_t script_code_size = (size_t)args.script_code_size;
 
 	script_code = (char *)malloc(script_code_size + 1);
-	for (size_t i = 0; i <= script_code_size; i++) {
+	for (size_t i = 0; i < script_code_size; i++) {
 		//char c = (char)MEM_B(args.script_code, i);
-		char c = rdram[(u64)args.script_code - 0xFFFFFFFF80000000ULL + i];
+		//char c = rdram[(u64)args.script_code - 0xFFFFFFFF80000000ULL + i];
+		//char c = MEM_B(((u64)args.script_code), i);
+		u64 address = ((u64)rdram)
+			+ (((((u64)i) + (((u64)args.script_code))) ^ (u64)3ULL) - (u64)0xFFFFFFFF80000000ULL);
+		char c = *((char *)address);
+		//LOG("sizeof(c) = %zu", sizeof(c));
 		script_code[i] = c;
-		LOG("script_code[%zu] = 0x%02hhx '%c'", i, c, c);
+		LOG("[i = %2zu] address = 0x%016"PRIx64" -> *address = 0x%02hhx || %3hhu || '%c\e[0m'", i, address, c, c, c);
+		//LOG("script_code[%zu] = 0x%02hhx '%c'", i, c, c);
 	}
 	script_code[script_code_size] = 0;
 
 	LOG("script_code = \"%s\"", script_code);
-	LOG("script_code_size = %"PRIu32, script_code_size);
+	LOG("script_code_size = %zu", script_code_size);
 
 	/* if (script_code == NULL) return;
 	if (script_code_size < 1) return;
@@ -111,4 +123,6 @@ RECOMP_EXPORT void LuaLoader_InvokeScriptCode(u8 *rdram, recomp_context *ctx) {
 		//abort();
 		return;
 	} */
+
+	free(script_code); script_code = NULL;
 }
