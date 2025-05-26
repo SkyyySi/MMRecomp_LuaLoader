@@ -15,6 +15,7 @@
 #include "./utils/logging.h"
 #include "./utils/return.h"
 #include "./utils/types.h"
+#include "./debug/pprint.h"
 
 #define JOIN_WORDS(LOW, HIGH) \
 ((u64)(((u64)(LOW) & 0xFFFFFFFFULL) | ((((u64)(HIGH)) & 0xFFFFFFFFULL) << 32ULL)))
@@ -104,6 +105,8 @@ RECOMP_EXPORT void LuaLoader_InvokeScriptCode(u8 *rdram, recomp_context *ctx) {
 
 	LOG("script_code = \"%s\"", script_code);
 	LOG("script_code_size = %zu", script_code_size);
+
+	pprint_hexdump(rdram + (ctx->r4 - 0xFFFFFFFF80000000ULL), (size_t)(1024ULL /* * 1024ULL * 8ULL */));
 
 	/* if (script_code == NULL) return;
 	if (script_code_size < 1) return;
