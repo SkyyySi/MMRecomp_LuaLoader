@@ -113,8 +113,12 @@ static void format_bits_u64(const u64 *restrict const x_ptr, char *restrict cons
 	LuaLoader_Deinit(SPLIT_DOUBLEWORD(L));
 } */
 
-RECOMP_HOOK("Player_Init") void my_player_init_hook(Actor *thisx, PlayState *play) {
-	Lua L = LuaLoader_Init();
+RECOMP_HOOK("Player_Init") void test_hook(Actor *thisx, PlayState *play) {
+	static bool do_run = true;
+	if (!do_run) return;
+	do_run = false;
+
+	Lua L = LuaLoader_Init("Hello, world!");
 
 	char bits[72];
 	format_bits_u64(&L, WITH_SIZE(bits));

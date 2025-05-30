@@ -31,7 +31,7 @@ typedef struct {
 RECOMP_IMPORT(".", void LuaLoader_Deinit(unsigned char *rdram, void *ctx));
 RECOMP_IMPORT(".", void LuaLoader_InvokeScriptCode(unsigned char *rdram, void *ctx)); */
 
-RECOMP_IMPORT(".", Lua LuaLoader_Init(void));
+RECOMP_IMPORT(".", Lua LuaLoader_Init(const char *str));
 //RECOMP_IMPORT(".", void LuaLoader_Deinit(Lua L));
 RECOMP_IMPORT(".", void LuaLoader_Deinit(u32 L_low, u32 L_high));
 //RECOMP_IMPORT(".", void LuaLoader_InvokeScriptCode(Lua L, const char *restrict script_code, size_t script_code_size));

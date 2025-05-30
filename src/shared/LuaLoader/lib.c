@@ -62,16 +62,19 @@ RECOMP_EXPORT void LuaLoader_Deinit(u8 *rdram, recomp_context *ctx) {
 }
 
 typedef struct {
-			u32 L_low;
-			u32 L_high;
+	u32 L_low;
+	u32 L_high;
 	u32 script_code;
 	u32 script_code_size;
 } LuaLoader_InvokeScriptCode_Args;
 
 RECOMP_EXPORT void LuaLoader_InvokeScriptCode(u8 *rdram, recomp_context *ctx) {
 	LuaLoader_InvokeScriptCode_Args *args_ptr =
-		(LuaLoader_InvokeScriptCode_Args *)(rdram + (ctx->r4 - 0xFFFFFFFF80000000ULL));
+		(LuaLoader_InvokeScriptCode_Args *)(rdram + (ctx->r4 & 0x7FFFFFFFULL));
 
+	LOG("ctx->r4               = 0x%016"PRIx64, (u64)(ctx->r4));
+	LOG("ctx->r4 (with offset) = 0x%08" PRIx32, (u32)(ctx->r4 & 0x7FFFFFFFULL));
+	LOG("rdram                 = 0x%016"PRIx64, (u64)(rdram));
 	LOG("args_ptr              = 0x%016"PRIx64, (u64)(args_ptr));
 
 	LuaLoader_InvokeScriptCode_Args args = *args_ptr;
@@ -88,25 +91,18 @@ RECOMP_EXPORT void LuaLoader_InvokeScriptCode(u8 *rdram, recomp_context *ctx) {
 	char *script_code = NULL;
 	size_t script_code_size = (size_t)args.script_code_size;
 
-	script_code = (char *)malloc(script_code_size + 1);
-	for (size_t i = 0; i < script_code_size; i++) {
-		//char c = (char)MEM_B(args.script_code, i);
-		//char c = rdram[(u64)args.script_code - 0xFFFFFFFF80000000ULL + i];
-		//char c = MEM_B(((u64)args.script_code), i);
-		u64 address = ((u64)rdram)
-			+ (((((u64)i) + (((u64)args.script_code))) ^ (u64)3ULL) - (u64)0xFFFFFFFF80000000ULL);
-		char c = *((char *)address);
-		//LOG("sizeof(c) = %zu", sizeof(c));
+	script_code = (char *)malloc(script_code_size + 1ULL);
+	for (size_t i = 0ULL; i < script_code_size; i++) {
+		const char *address = ((const char *)rdram) + (
+			((i + (u64)args.script_code & 0x7FFFFFFFULL) ^ 3ULL)
+		);
+		char c = *address;
 		script_code[i] = c;
-		LOG("[i = %2zu] address = 0x%016"PRIx64" -> *address = 0x%02hhx || %3hhu || '%c\e[0m'", i, address, c, c, c);
-		//LOG("script_code[%zu] = 0x%02hhx '%c'", i, c, c);
 	}
-	script_code[script_code_size] = 0;
+	script_code[script_code_size] = '\0';
 
 	LOG("script_code = \"%s\"", script_code);
 	LOG("script_code_size = %zu", script_code_size);
-
-	pprint_hexdump(rdram + (ctx->r4 - 0xFFFFFFFF80000000ULL), (size_t)(1024ULL /* * 1024ULL * 8ULL */));
 
 	/* if (script_code == NULL) return;
 	if (script_code_size < 1) return;

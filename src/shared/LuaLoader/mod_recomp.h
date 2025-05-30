@@ -125,7 +125,7 @@ typedef uint64_t gpr;
  * @return `s32` The value stored in the N64 register `reg`.
  */
 #define MEM_W(offset, reg) \
-    (*(int32_t*)(rdram + ((((reg) + (offset))) - 0xFFFFFFFF80000000)))
+    (*(int32_t*)(rdram + ((((reg) + (offset))) & 0x7FFFFFFF)))
 
 /**
  * @brief Load a signed 16-bit integer (a "halfword") from N64 memory.
@@ -136,7 +136,7 @@ typedef uint64_t gpr;
  * @return `s16` The value stored in the N64 register `reg`.
  */
 #define MEM_H(offset, reg) \
-    (*(int16_t*)(rdram + ((((reg) + (offset)) ^ 2) - 0xFFFFFFFF80000000)))
+    (*(int16_t*)(rdram + ((((reg) + (offset)) ^ 2) & 0x7FFFFFFF)))
 
 /**
  * @brief Load a signed 8-bit integer (a "byte") from N64 memory.
@@ -147,7 +147,7 @@ typedef uint64_t gpr;
  * @return `s8` The value stored in the N64 register `reg`.
  */
 #define MEM_B(offset, reg) \
-    (*(int8_t*)(rdram + ((((reg) + (offset)) ^ 3) - 0xFFFFFFFF80000000)))
+    (*(int8_t*)(rdram + ((((reg) + (offset)) ^ 3) & 0x7FFFFFFF)))
 
 /**
  * @brief Load an unsigned 16-bit integer (a "halfword") from N64 memory.
@@ -158,7 +158,7 @@ typedef uint64_t gpr;
  * @return `u16` The value stored in the N64 register `reg`.
  */
 #define MEM_HU(offset, reg) \
-    (*(uint16_t*)(rdram + ((((reg) + (offset)) ^ 2) - 0xFFFFFFFF80000000)))
+    (*(uint16_t*)(rdram + ((((reg) + (offset)) ^ 2) & 0x7FFFFFFF)))
 
 /**
  * @brief Load an unsigned 8-bit integer (a "byte") from N64 memory.
@@ -169,7 +169,7 @@ typedef uint64_t gpr;
  * @return `u8` The value stored in the N64 register `reg`.
  */
 #define MEM_BU(offset, reg) \
-    (*(uint8_t*)(rdram + ((((reg) + (offset)) ^ 3) - 0xFFFFFFFF80000000)))
+    (*(uint8_t*)(rdram + ((((reg) + (offset)) ^ 3) & 0x7FFFFFFF)))
 
 /**
  * @brief Stores a 64-bit integer (a "doubleword") value into an N64 register.
@@ -184,8 +184,8 @@ typedef uint64_t gpr;
  *       expression will result in a syntax error.
  */
 #define SD(val, offset, reg) { \
-    *(uint32_t*)(rdram + ((((reg) + (offset) + 4)) - 0xFFFFFFFF80000000)) = (uint32_t)((gpr)(val) >> 0); \
-    *(uint32_t*)(rdram + ((((reg) + (offset) + 0)) - 0xFFFFFFFF80000000)) = (uint32_t)((gpr)(val) >> 32); \
+    *(uint32_t*)(rdram + ((((reg) + (offset) + 4)) & 0x7FFFFFFF)) = (uint32_t)((gpr)(val) >> 0); \
+    *(uint32_t*)(rdram + ((((reg) + (offset) + 0)) & 0x7FFFFFFF)) = (uint32_t)((gpr)(val) >> 32); \
 }
 
 /**
