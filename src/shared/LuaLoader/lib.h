@@ -19,22 +19,14 @@
 typedef u64 Lua;
 
 typedef struct {
-	//union {
-	//	Lua L;
-		u32 L_low, L_high;
-	//};
+	u64 L;
 	const char *script_code;
 	size_t script_code_size;
-} LuaLoader_InvokeScriptCode_Args;
+} LuaLoader_InvokeScriptCodeArgs;
 
-/* RECOMP_IMPORT(".", void LuaLoader_Init(unsigned char *rdram, void *ctx));
-RECOMP_IMPORT(".", void LuaLoader_Deinit(unsigned char *rdram, void *ctx));
-RECOMP_IMPORT(".", void LuaLoader_InvokeScriptCode(unsigned char *rdram, void *ctx)); */
-
-RECOMP_IMPORT(".", Lua LuaLoader_Init(const char *str));
-//RECOMP_IMPORT(".", void LuaLoader_Deinit(Lua L));
-RECOMP_IMPORT(".", void LuaLoader_Deinit(u32 L_low, u32 L_high));
-//RECOMP_IMPORT(".", void LuaLoader_InvokeScriptCode(Lua L, const char *restrict script_code, size_t script_code_size));
-RECOMP_IMPORT(".", void LuaLoader_InvokeScriptCode(LuaLoader_InvokeScriptCode_Args *args));
+RECOMP_IMPORT(".", Lua LuaLoader_Init(void));
+RECOMP_IMPORT(".", void LuaLoader_Deinit(u64 L));
+RECOMP_IMPORT(".", void LuaLoader_InvokeScriptCode(LuaLoader_InvokeScriptCodeArgs *args));
+RECOMP_IMPORT(".", void LuaLoader_InvokeScriptFile(u64 L, const char *file_path_str));
 
 #endif

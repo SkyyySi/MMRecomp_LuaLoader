@@ -12,126 +12,99 @@
 #include "./mod_recomp.h"
 
 #include "./utils/arguments.h"
+#include "./utils/array.h"
 #include "./utils/logging.h"
 #include "./utils/mem.h"
 #include "./utils/return.h"
 #include "./utils/types.h"
 #include "./debug/pprint.h"
 
-#define JOIN_WORDS(LOW, HIGH) \
-((u64)(((u64)(LOW) & 0xFFFFFFFFULL) | ((((u64)(HIGH)) & 0xFFFFFFFFULL) << 32ULL)))
+/* #define SWAP_LOW_HIGH(VALUE) \
+((u64)(((((u64)(VALUE)) & 0xFFFFFFFFULL) << 32ULL) | ((((u64)(VALUE)) >> 32ULL) & 0xFFFFFFFFULL))) */
 
-#define SWAP_LOW_HIGH(VALUE) \
-((u64)(((((u64)(VALUE)) & 0xFFFFFFFFULL) << 32ULL) | ((((u64)(VALUE)) >> 32ULL) & 0xFFFFFFFFULL)))
+#define ASSERT(PREDICATE, ...) if (!(PREDICATE)) { \
+	LOG("Assertion failed: %s", (#PREDICATE)); \
+	LOG(__VA_ARGS__); \
+	return; \
+}
+
+u64 join_low_high(u64 low, u64 high) {
+	return (low & 0xFFFFFFFFULL) | ((high & 0xFFFFFFFFULL) << 32ULL);
+}
 
 RECOMP_EXPORT const u32 recomp_api_version = 1;
 
-static u32 counter = 0UL;
-
 RECOMP_EXPORT void LuaLoader_Init(u8 *rdram, recomp_context *ctx) {
-	char *str = NULL;
-	if (try_get_array_argument(rdram, ctx, malloc, 0, &str, sizeof(char))) {
-		LOG("str = \"%s\"", str);
-		free(str);
-	}
-
 	lua_State *L = luaL_newstate();
+	ASSERT(L != NULL, "Call to `luaL_newstate()` returned NULL!");
 
-	if (L != NULL) {
-		luaL_openlibs(L);
-	} else {
-		LOG("Call to `luaL_newstate()` returned NULL!");
-		return;
-	}
-
-	char bits[72];
-	format_bits_u64((u64)L, bits, sizeof(bits));
-	LOG("0x%016"PRIx64" || 0b%s || %20"PRIu64, (u64)L, bits, (u64)L);
+	luaL_openlibs(L);
 
 	RETURN_INT(ctx, L);
 }
 
 RECOMP_EXPORT void LuaLoader_Deinit(u8 *rdram, recomp_context *ctx) {
-	lua_State *L = (lua_State *)JOIN_WORDS(ctx->r4, ctx->r5);
-	//LOG("lua_State *L = %p", L);
+	lua_State *L = (lua_State *)join_low_high(ctx->r5, ctx->r4);
+	ASSERT(L != NULL, "Expected `L` to be a pointer to `lua_State`, but got NULL instead!");
 
-	if (L != NULL) {
-		lua_close(L);
-	} else {
-		LOG("Expected `L` to be a pointer to `lua_State`, but got NULL instead!");
-	}
+	lua_close(L);
 }
 
 typedef struct {
-	u32 L_low;
-	u32 L_high;
+	struct {
+		u32 high;
+		u32 low;
+	} L;
 	u32 script_code;
 	u32 script_code_size;
-} LuaLoader_InvokeScriptCode_Args;
+} InvokeScriptCodeArgs;
 
-RECOMP_EXPORT void LuaLoader_InvokeScriptCode(u8 *rdram, recomp_context *ctx) {
-	LuaLoader_InvokeScriptCode_Args *args_ptr =
-		(LuaLoader_InvokeScriptCode_Args *)(rdram + (ctx->r4 & 0x7FFFFFFFULL));
+void InvokeScriptHelper(lua_State *L, int run_status) {
+	ASSERT(L != NULL, "Expected `L` to be a pointer to `lua_State`, but got NULL instead!");
 
-	LOG("ctx->r4               = 0x%016"PRIx64, (u64)(ctx->r4));
-	LOG("ctx->r4 (with offset) = 0x%08" PRIx32, (u32)(ctx->r4 & 0x7FFFFFFFULL));
-	LOG("rdram                 = 0x%016"PRIx64, (u64)(rdram));
-	LOG("args_ptr              = 0x%016"PRIx64, (u64)(args_ptr));
-
-	LuaLoader_InvokeScriptCode_Args args = *args_ptr;
-
-	LOG("&args                 = 0x%016"PRIx64, (u64)(&args));
-	//LOG("args.L                = 0x%016"PRIx64, SWAP_LOW_HIGH(args.L));
-	LOG("args.L_low / .L_high  = 0x%016"PRIx64, JOIN_WORDS(args.L_low, args.L_high));
-	LOG("args.script_code      = 0x%08" PRIx32, args.script_code);
-	LOG("args.script_code_size = %10"PRIu32, args.script_code_size);
-	//LOG("args.script_code      = \"%s\"" , MEM_B(args.script_code, 0));
-
-	//lua_State *L = (lua_State *)args.L;
-	lua_State *L = (lua_State *)JOIN_WORDS(args.L_low, args.L_high);
-	assert(L != NULL);
-
-	size_t script_code_size = (size_t)args.script_code_size;
-	assert((script_code_size >> 32) == 0);
-
-	char *script_code = (char *)malloc(script_code_size + 1ULL);
-	assert(script_code != NULL);
-
-	for (size_t i = 0ULL; i < script_code_size; i++) {
-		script_code[i] = MEM_B(i, args.script_code);
-	}
-	script_code[script_code_size] = '\0';
-	/* char *script_code = NULL;
-	mem_get_array_s8(
-		rdram,
-		ctx,
-		malloc,
-		args.script_code,
-		script_code_size,
-		&script_code
-	); */
-
-	LOG("script_code = \"%s\"", script_code);
-	LOG("script_code_size = %zu", script_code_size);
-
-	/* if (script_code == NULL) return;
-	if (script_code_size < 1) return;
-
-	if (luaL_loadbufferx(L, script_code, script_code_size, "embedded_chunk", "t") != LUA_OK) {
+	if (run_status != LUA_OK) {
 		const char *error_message = lua_tostring(L, -1);
-		fprintf(stderr, ">>> Lua load error: %s\n", (error_message != NULL) ? error_message : "Unknown error");
-		//lua_close(L);
-		//abort();
+		if (error_message == NULL) error_message = "<unknown error>";
+		LOG("Lua loading error:\n    %s", error_message);
 		return;
 	}
 
 	if (lua_pcall(L, 0, LUA_MULTRET, 0) != LUA_OK) {
 		const char *error_message = lua_tostring(L, -1);
-		fprintf(stderr, ">>> Lua runtime error: %s\n", (error_message != NULL) ? error_message : "Unknown error");
-		//lua_close(L);
-		//abort();
+		if (error_message == NULL) error_message = "<unknown error>";
+		LOG("Lua runtime error:\n    %s", error_message);
 		return;
-	} */
+	}
+}
 
-	free(script_code); script_code = NULL;
+RECOMP_EXPORT void LuaLoader_InvokeScriptCode(u8 *rdram, recomp_context *ctx) {
+	InvokeScriptCodeArgs args =
+		*((InvokeScriptCodeArgs *)(rdram + (ctx->r4 & 0x7FFFFFFFULL)));
+
+	lua_State *L = (lua_State *)join_low_high(args.L.low, args.L.high);
+	ASSERT(L != NULL, "Expected `L` to be a pointer to `lua_State`, but got NULL instead!");
+
+	size_t script_code_size = (size_t)args.script_code_size;
+	ASSERT(
+		(script_code_size & 0xFFFFFFFF00000000ULL) == 0ULL,
+		"Argument `script_code_size` larger than should be possible! (got: 0x%016"PRIx64")",
+		(u64)script_code_size
+	);
+
+	AUTO_FREE char *script_code = NULL;
+	ASSERT(get_array(args.script_code, script_code_size, &script_code) > 0, "Failed to get script source code!");
+	ASSERT(script_code != NULL, "Expected `script_code` to be a string, but got NULL instead!");
+
+	return InvokeScriptHelper(L, luaL_loadbufferx(L, script_code, script_code_size, "script", "t"));
+}
+
+RECOMP_EXPORT void LuaLoader_InvokeScriptFile(u8 *rdram, recomp_context *ctx) {
+	lua_State *L = (lua_State *)join_low_high(ctx->r5, ctx->r4);
+	ASSERT(L != NULL, "Expected `L` to be a pointer to `lua_State`, but got NULL instead!");
+
+	AUTO_FREE char *file_path_str = NULL;
+	ASSERT(get_array(ctx->r6, 0, &file_path_str) > 0, "Failed to get path to script file!");
+	ASSERT(file_path_str != NULL, "Expected `file_path_str` to be a string, but got NULL instead!");
+
+	return InvokeScriptHelper(L, luaL_loadfilex(L, file_path_str, "t"));
 }

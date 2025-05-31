@@ -58,7 +58,7 @@ sizeof(u32) = 4
 sizeof(u64) = 8
 */
 
-static void format_bits_u64(const u64 *restrict const x_ptr, char *restrict const out_buffer, const size_t buffer_size) {
+/* static void format_bits_u64(const u64 *restrict const x_ptr, char *restrict const out_buffer, const size_t buffer_size) {
 	if (x_ptr == NULL) {
 		LOG("Value of `x_ptr` is NULL!");
 		return;
@@ -87,7 +87,7 @@ static void format_bits_u64(const u64 *restrict const x_ptr, char *restrict cons
 	}
 
 	out_buffer[buffer_size - 1] = '\0';
-}
+} */
 
 #define SPLIT_DOUBLEWORD(VALUE) \
 ((u32)(((u64)(VALUE)) & ((u64)(0xFFFFFFFF)))), ((u32)((((u64)(VALUE)) >> ((u64)(32))) & ((u64)(0xFFFFFFFF))))
@@ -118,24 +118,18 @@ RECOMP_HOOK("Player_Init") void test_hook(Actor *thisx, PlayState *play) {
 	if (!do_run) return;
 	do_run = false;
 
-	Lua L = LuaLoader_Init("Hello, world!");
+	Lua L = LuaLoader_Init();
 
-	char bits[72];
-	format_bits_u64(&L, WITH_SIZE(bits));
-	LOG("0x%016llx || 0b%s || %20llu", L, bits, L);
-
-	const char script_code[] = "print('Hello, world!')";
-	LOG("script_code = "PRINTF_PTR" -> \"%s\"", script_code, script_code);
-	LuaLoader_InvokeScriptCode_Args invoke_script_args = {
-		(u32)((L >>  0ULL) & 0xFFFFFFFFULL),
-		(u32)((L >> 32ULL) & 0xFFFFFFFFULL),
+	/* const char script_code[] = "print('\\027[7mHello from Lua!\\027[27m')";
+	LuaLoader_InvokeScriptCodeArgs invoke_script_args = {
+		L,
 		script_code,
-		sizeof(script_code),
+		sizeof(script_code) - 1, // Do not count the terminating NULL-byte.
 	};
-	LOG("&invoke_script_args = "PRINTF_PTR, &invoke_script_args);
-	LuaLoader_InvokeScriptCode(&invoke_script_args);
+	LuaLoader_InvokeScriptCode(&invoke_script_args); */
+	LuaLoader_InvokeScriptFile(L, "/media/Linux-8TB/Code/MMRecomp_LuaLoader/test.lua");
 
-	LuaLoader_Deinit(SPLIT_DOUBLEWORD(L));
+	LuaLoader_Deinit(L);
 }
 
 void print_actor_info(const Actor *restrict const thisx) {

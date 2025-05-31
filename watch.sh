@@ -123,7 +123,12 @@ function rebuild_game() {
 		#flatpak run \
 		#	--command='/app/bin/Zelda64Recompiled' \
 		#	'io.github.zelda64recomp.zelda64recomp'
-		(cd "$HOME/Zelda64Recompiled" && './Zelda64Recompiled')
+		(
+			cd "$HOME/Zelda64Recompiled" &&
+			env \
+				LD_LIBRARY_PATH="${XDG_CONFIG_HOME:-$HOME/.config}/Zelda64Recompiled/mods" \
+				'./Zelda64Recompiled'
+		)
 
 		local -i exit_code="$?"
 

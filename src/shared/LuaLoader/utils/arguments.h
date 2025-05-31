@@ -49,7 +49,7 @@
  *                         should be `&data` here (not just `data`!)).
  * @return The number of bytes allocated by `alloc_fn`, or `0` on error.
  */
-size_t try_get_array_u8(
+static size_t try_get_array_u8(
 		const u8 *restrict const rdram,
 		const recomp_context *restrict const ctx,
 		void *(*alloc_fn)(size_t size),
@@ -103,7 +103,7 @@ size_t try_get_array_u8(
 	return allocated_bytes;
 }
 
-size_t try_get_array_argument(
+static size_t try_get_array_argument(
 		const u8 *restrict const rdram,
 		const recomp_context *restrict const ctx,
 		void *(*memory_allocator)(size_t size),

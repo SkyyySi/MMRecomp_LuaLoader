@@ -45,6 +45,7 @@ native_libraries = [
         "LuaLoader_Init",
         "LuaLoader_Deinit",
         "LuaLoader_InvokeScriptCode",
+        "LuaLoader_InvokeScriptFile",
     ] },
 ]
 
