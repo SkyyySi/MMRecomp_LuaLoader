@@ -13,6 +13,7 @@
 
 #include "./utils/arguments.h"
 #include "./utils/logging.h"
+#include "./utils/mem.h"
 #include "./utils/return.h"
 #include "./utils/types.h"
 #include "./debug/pprint.h"
@@ -88,18 +89,27 @@ RECOMP_EXPORT void LuaLoader_InvokeScriptCode(u8 *rdram, recomp_context *ctx) {
 
 	//lua_State *L = (lua_State *)args.L;
 	lua_State *L = (lua_State *)JOIN_WORDS(args.L_low, args.L_high);
-	char *script_code = NULL;
-	size_t script_code_size = (size_t)args.script_code_size;
+	assert(L != NULL);
 
-	script_code = (char *)malloc(script_code_size + 1ULL);
+	size_t script_code_size = (size_t)args.script_code_size;
+	assert((script_code_size >> 32) == 0);
+
+	char *script_code = (char *)malloc(script_code_size + 1ULL);
+	assert(script_code != NULL);
+
 	for (size_t i = 0ULL; i < script_code_size; i++) {
-		const char *address = ((const char *)rdram) + (
-			((i + (u64)args.script_code & 0x7FFFFFFFULL) ^ 3ULL)
-		);
-		char c = *address;
-		script_code[i] = c;
+		script_code[i] = MEM_B(i, args.script_code);
 	}
 	script_code[script_code_size] = '\0';
+	/* char *script_code = NULL;
+	mem_get_array_s8(
+		rdram,
+		ctx,
+		malloc,
+		args.script_code,
+		script_code_size,
+		&script_code
+	); */
 
 	LOG("script_code = \"%s\"", script_code);
 	LOG("script_code_size = %zu", script_code_size);
