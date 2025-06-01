@@ -18,13 +18,16 @@ return select(2, assert(xpcall(function(...)
 
 	--[[ do
 		---@type string
-		local rdram_data = assert(Recomp.rdram_get_data_as_string(Recomp.rdram))
+		local rdram_data = assert(Recomp.rdram:get_data_as_string(Recomp.rdram))
 		local file <close> = assert(io.open("/tmp/rdram-dump.bin", "wb"))
 		assert(file:write(rdram_data))
 	end ]]
 
 	print(Recomp.rdram[1024])
-	print(Recomp.rdram.asdf)
+	for k, v in Recomp.rdram:pairs() do
+		print(k, v)
+	end
+	--print(Recomp.rdram:get_occupied_length())
 	--print(Recomp.call_game_func("Player_Init", 0x80841AC4, 0xA4C))
 
 	do return end
