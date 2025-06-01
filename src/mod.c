@@ -118,7 +118,28 @@ RECOMP_HOOK("Player_Init") void test_hook(Actor *thisx, PlayState *play) {
 	if (!do_run) return;
 	do_run = false;
 
+	const char script_code[] = "If you can read this, it works!";
+	LOG("script_code["PRINTF_S32"] = "PRINTF_PTR, (s32)sizeof(script_code), script_code);
+
 	Lua L = LuaLoader_Init();
+
+	if (L == 0ULL) {
+		LOG("Expected `L` to be a pointer to `lua_State`, but got NULL instead!");
+		return;
+	}
+
+	char *script_file_path = recomp_get_config_string("LuaLoader::EntrypointScript");
+
+	if (script_file_path == NULL) {
+		LOG("Failed to get the file path of the entrypoint Lua script!");
+		goto CleanupLuaVM;
+	}
+
+	if (script_file_path[0] == '\0') {
+		LOG("The \"Entrypoint Script\" configuration option is currently empty.");
+		LOG("Please set it to the filepath of Lua script file you wish to be executed!");
+		goto CleanupScriptFilePath;
+	}
 
 	/* const char script_code[] = "print('\\027[7mHello from Lua!\\027[27m')";
 	LuaLoader_InvokeScriptCodeArgs invoke_script_args = {
@@ -127,8 +148,12 @@ RECOMP_HOOK("Player_Init") void test_hook(Actor *thisx, PlayState *play) {
 		sizeof(script_code) - 1, // Do not count the terminating NULL-byte.
 	};
 	LuaLoader_InvokeScriptCode(&invoke_script_args); */
-	LuaLoader_InvokeScriptFile(L, "/media/Linux-8TB/Code/MMRecomp_LuaLoader/test.lua");
+	LuaLoader_InvokeScriptFile(L, script_file_path);
 
+CleanupScriptFilePath:
+	recomp_free_config_string(script_file_path);
+
+CleanupLuaVM:
 	LuaLoader_Deinit(L);
 }
 

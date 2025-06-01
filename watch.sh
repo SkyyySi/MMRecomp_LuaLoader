@@ -174,10 +174,10 @@ while true; do
 			--recursive \
 			--format='%w%f' \
 			--event='modify' \
-			--include='\.[ch]$' \
+			--include='\.(c|h|lua)$' \
 			--timeout='1' \
 			-- \
-			'./src'
+			'./'
 		)
 		exit_code=$?
 
