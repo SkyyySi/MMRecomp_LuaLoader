@@ -51,9 +51,9 @@
  */
 static size_t try_get_array_u8(
 		const u8 *restrict const rdram,
-		const recomp_context *restrict const ctx,
+		const RecompContext *restrict const ctx,
 		void *(*alloc_fn)(size_t size),
-		gpr const array,
+		RecompGPR const array,
 		size_t length,
 		u8 **restrict const destination
 ) {
@@ -105,7 +105,7 @@ static size_t try_get_array_u8(
 
 static size_t try_get_array_argument(
 		const u8 *restrict const rdram,
-		const recomp_context *restrict const ctx,
+		const RecompContext *restrict const ctx,
 		void *(*memory_allocator)(size_t size),
 		u8 const argument_position,
 		void *restrict const destination,
@@ -121,7 +121,7 @@ static size_t try_get_array_argument(
 		return 0;
 	}
 
-	gpr arg_n64_ptr = 0;
+	RecompGPR arg_n64_ptr = 0;
 	switch (argument_position) {
 		case 0: { arg_n64_ptr = ctx->r4; break; }
 		case 1: { arg_n64_ptr = ctx->r5; break; }

@@ -13,7 +13,7 @@
 #include "./logging.h"
 #include "./types.h"
 
-void cleanup_free(void *ptr_to_object_arg) {
+static void cleanup_free(void *ptr_to_object_arg) {
 	void **ptr_to_object = ptr_to_object_arg;
 	if (ptr_to_object == NULL) return;
 

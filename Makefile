@@ -44,7 +44,7 @@ SHARED_LIB_VERSION := 1.0.0
 SHARED_LIB_BIN_BASE_PATH := $(BUILD_DIR)/src/shared/$(SHARED_LIB_NAME)-$(SHARED_LIB_VERSION)
 SHARED_LIB_SOURCE_PATH := ./src/shared/$(SHARED_LIB_NAME)/lib.c
 #ZIG_CFLAGS := -static -shared -DLUA_USE_LINUX -fPIC -I./include -I./src/shared/LuaLoader/lua/src -lm -Wl,-E -ldl # -O2 -g
-ZIG_CFLAGS := -static -shared -fPIC # -O2 -g
+ZIG_CFLAGS := -std=c23 -static -shared -fPIC # -O2 -g
 ZIG_LDFLAGS := -I./include -I./src/shared/LuaLoader/lua/src
 
 $(C_OBJS): $(BUILD_DIR)/%.o : %.c | $(BUILD_DIR) $(BUILD_DIR)/src

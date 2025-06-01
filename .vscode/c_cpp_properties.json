@@ -12,10 +12,13 @@
             "defines": [
                 "F3DEX_GBI_2",
                 "_LANGUAGE_C",
-                "MIPS"
+                "MIPS",
+                "true=((_Bool)1)",
+                "false=((_Bool)0)",
+                "NULL=((void *)0)"
             ],
-            "compilerPath": "clang",
-            "cStandard": "c99",
+            "compilerPath": "gcc",
+            "cStandard": "c23",
             "intelliSenseMode": "${default}"
         }
     ],

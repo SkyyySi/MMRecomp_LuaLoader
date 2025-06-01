@@ -78,122 +78,545 @@
 
 /**
  * This type is used whereever an N64 instruction would try to use a "General
- * Purpose Register" (GPR) on real hardware. A value with a type of `gpr` can
- * be thought of as an integer value with an unknown size and signedness.
- * It may be a `u64`, but it may also be an `s32`, a `u8` or a pointer (which
- * could also be either 32 or 64 bits in size, since the N64 had both a 32-bit
- * and a 64-bit addressing mode).
- * @todo This should probably be renamed to `gpr_t`.
+ * Purpose Register" (GPR) on real hardware. A value with a type of `RecompGPR`
+ * can be thought of as an integer value with an unknown size and signedness.
+ *
+ * In general, this cannot hold 64-bit values (despite being implemented as a
+ * `u64`), since the N64 is typically not used in 64-bit-register mode. When a
+ * 64-bit value is stored, it will instead be split up into a low and high part,
+ * where the high part gets written into the specified register (let's call it
+ * `X`), while the low part is placed into the GPR `X + 1`. For example, passing
+ * a 64-bit value as the first argument to an N64 function will place the upper
+ * 32 bits into `gpr4`, while `gpr5` holds the lower / less significant 32 bits.
+ *
+ * And yes, to be clear, it really is this way around. It may sound like `X + 1`
+ * should hold the higher bits and `X` the lower bits, but that's just what
+ * happens when you try to move data across the boundry of two completely
+ * different architecutures, especially when one is little endian (x86_64 and
+ * ARM64) while the other is big endian (MIPS3, at least on the N64).
  */
-typedef uint64_t gpr;
+typedef uint64_t RecompGPR;
+
+/**
+ * @brief A type which represents the data stored in an N64 floating-point
+ *        register, allowing to access it as various different numeric types.
+ * @todo This should probably be renamed to `fpr_t`.
+ */
+typedef union {
+    double d;
+    struct {
+        float fl;
+        float fh;
+    };
+    struct {
+        uint32_t u32l;
+        uint32_t u32h;
+    };
+    uint64_t u64;
+} RecompFPR;
+
+/**
+ * @brief A type which represents the entire state of the N64 processor.
+ */
+typedef struct {
+    /**
+     * Constant zero register. Always reads as 0. Writes are ignored.
+     */
+    RecompGPR r0;
+
+    /**
+     * Assembler temporary register. Not preserved across calls.
+     */
+    RecompGPR r1;
+
+    /**
+     * Function return value or expression result. Also used as argument for
+	 * leaf functions.
+     */
+    RecompGPR r2;
+
+    /**
+     * Secondary return value register.
+     */
+    RecompGPR r3;
+
+    /**
+     * First argument register, used to pass arguments to functions.
+     */
+    RecompGPR r4;
+
+    /**
+     * Second argument register.
+     */
+    RecompGPR r5;
+
+    /**
+     * Third argument register.
+     */
+    RecompGPR r6;
+
+    /**
+     * Fourth argument register.
+     */
+    RecompGPR r7;
+
+    /**
+     * Temporary register. Not preserved across function calls.
+     */
+    RecompGPR r8;
+
+    /**
+     * Temporary register. Not preserved across function calls.
+     */
+    RecompGPR r9;
+
+    /**
+     * Temporary register. Not preserved across function calls.
+     */
+    RecompGPR r10;
+
+    /**
+     * Temporary register. Not preserved across function calls.
+     */
+    RecompGPR r11;
+
+    /**
+     * Temporary register. Not preserved across function calls.
+     */
+    RecompGPR r12;
+
+    /**
+     * Temporary register. Not preserved across function calls.
+     */
+    RecompGPR r13;
+
+    /**
+     * Temporary register. Not preserved across function calls.
+     */
+    RecompGPR r14;
+
+    /**
+     * Temporary register. Not preserved across function calls.
+     */
+    RecompGPR r15;
+
+    /**
+     * Saved register. Preserved across function calls.
+     */
+    RecompGPR r16;
+
+    /**
+     * Saved register. Preserved across function calls.
+     */
+    RecompGPR r17;
+
+    /**
+     * Saved register. Preserved across function calls.
+     */
+    RecompGPR r18;
+
+    /**
+     * Saved register. Preserved across function calls.
+     */
+    RecompGPR r19;
+
+    /**
+     * Saved register. Preserved across function calls.
+     */
+    RecompGPR r20;
+
+    /**
+     * Saved register. Preserved across function calls.
+     */
+    RecompGPR r21;
+
+    /**
+     * Saved register. Preserved across function calls.
+     */
+    RecompGPR r22;
+
+    /**
+     * Saved register. Preserved across function calls.
+     */
+    RecompGPR r23;
+
+    /**
+     * Temporary register. Not preserved across function calls.
+     */
+    RecompGPR r24;
+
+    /**
+     * Temporary register. Not preserved across function calls.
+     */
+    RecompGPR r25;
+
+    /**
+     * Reserved for OS kernel. Do not use.
+     */
+    RecompGPR r26;
+
+    /**
+     * Reserved for OS kernel. Do not use.
+     */
+    RecompGPR r27;
+
+    /**
+     * Global pointer (gp) used for addressing static data.
+     */
+    RecompGPR r28;
+
+    /**
+     * Stack pointer (sp) used to manage the call stack.
+     */
+    RecompGPR r29;
+
+    /**
+     * Frame pointer (fp) or another saved register depending on calling
+	 * convention.
+     */
+    RecompGPR r30;
+
+    /**
+     * Return address (ra) used for storing the function return address.
+     */
+    RecompGPR r31;
+
+    /**
+     * Floating-point register f0, often used for temporary values.
+     */
+    RecompFPR f0;
+
+    /**
+     * Floating-point register f1, used for temporary computations.
+     */
+    RecompFPR f1;
+
+    /**
+     * Floating-point register f2, used for intermediate floating-point results.
+     */
+    RecompFPR f2;
+
+    /**
+     * Floating-point register f3, used for intermediate floating-point results.
+     */
+    RecompFPR f3;
+
+    /**
+     * Floating-point register f4, used for intermediate floating-point results.
+     */
+    RecompFPR f4;
+
+    /**
+     * Floating-point register f5, general-purpose FP temporary.
+     */
+    RecompFPR f5;
+
+    /**
+     * Floating-point register f6, general-purpose FP temporary.
+     */
+    RecompFPR f6;
+
+    /**
+     * Floating-point register f7, general-purpose FP temporary.
+     */
+    RecompFPR f7;
+
+    /**
+     * Floating-point register f8, general-purpose FP temporary.
+     */
+    RecompFPR f8;
+
+    /**
+     * Floating-point register f9, general-purpose FP temporary.
+     */
+    RecompFPR f9;
+
+    /**
+     * Floating-point register f10, general-purpose FP temporary.
+     */
+    RecompFPR f10;
+
+    /**
+     * Floating-point register f11, general-purpose FP temporary.
+     */
+    RecompFPR f11;
+
+    /**
+     * Floating-point register f12, used for function argument or return value.
+     */
+    RecompFPR f12;
+
+    /**
+     * Floating-point register f13, used for function argument or return value.
+     */
+    RecompFPR f13;
+
+    /**
+     * Floating-point register f14, general-purpose FP value.
+     */
+    RecompFPR f14;
+
+    /**
+     * Floating-point register f15, general-purpose FP value.
+     */
+    RecompFPR f15;
+
+    /**
+     * Floating-point register f16, general-purpose FP value.
+     */
+    RecompFPR f16;
+
+    /**
+     * Floating-point register f17, general-purpose FP value.
+     */
+    RecompFPR f17;
+
+    /**
+     * Floating-point register f18, general-purpose FP value.
+     */
+    RecompFPR f18;
+
+    /**
+     * Floating-point register f19, general-purpose FP value.
+     */
+    RecompFPR f19;
+
+    /**
+     * Floating-point register f20, general-purpose FP value.
+     */
+    RecompFPR f20;
+
+    /**
+     * Floating-point register f21, general-purpose FP value.
+     */
+    RecompFPR f21;
+
+    /**
+     * Floating-point register f22, general-purpose FP value.
+     */
+    RecompFPR f22;
+
+    /**
+     * Floating-point register f23, general-purpose FP value.
+     */
+    RecompFPR f23;
+
+    /**
+     * Floating-point register f24, general-purpose FP value.
+     */
+    RecompFPR f24;
+
+    /**
+     * Floating-point register f25, general-purpose FP value.
+     */
+    RecompFPR f25;
+
+    /**
+     * Floating-point register f26, general-purpose FP value.
+     */
+    RecompFPR f26;
+
+    /**
+     * Floating-point register f27, general-purpose FP value.
+     */
+    RecompFPR f27;
+
+    /**
+     * Floating-point register f28, general-purpose FP value.
+     */
+    RecompFPR f28;
+
+    /**
+     * Floating-point register f29, general-purpose FP value.
+     */
+    RecompFPR f29;
+
+    /**
+     * Floating-point register f30, general-purpose FP value.
+     */
+    RecompFPR f30;
+
+    /**
+     * Floating-point register f31, often used as a return value register or
+     * temporary.
+     */
+    RecompFPR f31;
+
+    /**
+     * The high and low registers are used for certain arithmetic operations
+     * like integer multiplication, where the output may be way to large to fit
+     * into a single 64-bit register. These are essentially used as if they were
+     * a single, 128-bit-wide register.
+    */
+    uint64_t hi, lo;
+
+    /**
+     * Pointer to the odd-numbered halves of paired single-precision FPRs. Used
+     * for operations in 32-bit mode.
+     */
+    uint32_t* f_odd;
+
+    /**
+     * @todo This should be made into an `enum`.
+     * Status register of the CPU (coprocessor 0 status register). Controls
+     * system-level state like interrupt masking, exception mode, etc.
+     */
+    uint32_t status_reg;
+
+    /**
+     * @todo This should be made into an `enum`.
+     * Indicates whether the FPU is in 64-bit or 32-bit mode.
+     * This affects how FP registers and operations are interpreted.
+     */
+    uint8_t mips3_float_mode;
+} RecompContext;
+
+/**
+ * @brief A type which indicates that a byte array is in the "reversed" order of
+ *        the N64, meaning that it has to be accessed through the utility macros
+ *        and functions defined in `mod_recomp.h` to read its data in the
+ *        correct order. It is also a promise that the array has a size of (at
+ *        least) 512 mebibytes / `0x20000000` bytes.
+ */
+typedef uint8_t RecompRDRAM;
+
+/**
+ * @brief A type representing the possible ways to round a floating-point value,
+ *        converting it to an integer.
+ */
+typedef enum RecompRoundingMode {
+    /**
+     * @brief Performs mathemathically correct rounding to the nearest integer.
+     */
+    RecompRoundingMode_Nearest = 0U,
+    /**
+     * @brief Round towards zero. Rounds down for positive values and rounds up
+     *        for negative values.
+     *
+     * This is usually the fastest rounding method, as it can directly cast the
+     * given floating-point value into an integer without calling any math
+     * functions from the C standard library first.
+     */
+    RecompRoundingMode_Truncate = 1U,
+    /**
+     * @brief Round up towards positive infinity.
+     */
+    RecompRoundingMode_Ceiling = 2U,
+    /**
+     * @brief Round down towards negative infinity.
+     */
+    RecompRoundingMode_Floor = 3U,
+} RecompRoundingMode;
 
 /**
  * @brief Cast a number into a signed 64-bit integer.
- * @param[in] val The value to convert.
+ * @param[in] VAL The value to convert.
  * @return `s64` The converted value.
  */
-#define SIGNED(val) \
-    ((int64_t)(val))
+#define SIGNED(VAL) \
+    ((int64_t)(VAL))
 
 /**
  * @brief Perform an addition of two numbers and store the result as a signed
  *        32-bit integer into a general purpose register.
- * @param[in] a The first addend value.
- * @param[in] b The second addend value.
- * @return `gpr` The sum of `a` and `b` (the result of the computation).
+ * @param[in] A The first addend value.
+ * @param[in] B The second addend value.
+ * @return `RecompGPR` The sum of `A` and `B` (the result of the computation).
  */
-#define ADD32(a, b) \
-    ((gpr)(int32_t)((a) + (b)))
+#define ADD32(A, B) \
+    ((RecompGPR)(int32_t)((A) + (B)))
 
 /**
  * @brief Perform a subtraction of two numbers and store the result as a signed
  *        32-bit integer into a general purpose register.
- * @param[in] a The minuend value (the value that `b` is subtracted from).
- * @param[in] b The subtrahend value (the value to subtract from `a`).
- * @return `gpr` The difference between `a` and `b` (the result of the
+ * @param[in] A The minuend value (the value that `B` is subtracted from).
+ * @param[in] B The subtrahend value (the value to subtract from `a`).
+ * @return `RecompGPR` The difference between `A` and `B` (the result of the
  *               computation).
  */
-#define SUB32(a, b) \
-    ((gpr)(int32_t)((a) - (b)))
+#define SUB32(A, B) \
+    ((RecompGPR)(int32_t)((A) - (B)))
 
 /**
  * @brief Load a signed 32-bit integer (a "word") from N64 memory.
- * @param[in] offset `gpr` A pointer to the array where the recomp stores its
+ * @param[in] OFFSET `RecompGPR` A pointer to the array where the recomp stores its
  *                         data for N64 registers in memory.
- * @param[in] reg `gpr` The number of the target register to read from, acting
- *                      as an index into the array at `offset`.
- * @return `s32` The value stored in the N64 register `reg`.
+ * @param[in] REG `RecompGPR` The number of the target register to read from, acting
+ *                      as an index into the array at `OFFSET`.
+ * @return `s32` The value stored in the N64 register `REG`.
  */
-#define MEM_W(offset, reg) \
-    (*(int32_t*)(rdram + ((((reg) + (offset))) & 0x7FFFFFFF)))
+#define MEM_W(OFFSET, REG) \
+    (*(int32_t *)(rdram + ((((REG) + (OFFSET))) & 0x7FFFFFFFULL)))
 
 /**
  * @brief Load a signed 16-bit integer (a "halfword") from N64 memory.
- * @param[in] offset `gpr` A pointer to the array where the recomp stores its
+ * @param[in] OFFSET `RecompGPR` A pointer to the array where the recomp stores its
  *                         data for N64 registers in memory.
- * @param[in] reg `gpr` The number of the target register to read from, acting
- *                      as an index into the array at `offset`.
- * @return `s16` The value stored in the N64 register `reg`.
+ * @param[in] REG `RecompGPR` The number of the target register to read from, acting
+ *                      as an index into the array at `OFFSET`.
+ * @return `s16` The value stored in the N64 register `REG`.
  */
-#define MEM_H(offset, reg) \
-    (*(int16_t*)(rdram + ((((reg) + (offset)) ^ 2) & 0x7FFFFFFF)))
+#define MEM_H(OFFSET, REG) \
+    (*(int16_t *)(rdram + ((((REG) + (OFFSET)) ^ 2) & 0x7FFFFFFFULL)))
 
 /**
  * @brief Load a signed 8-bit integer (a "byte") from N64 memory.
- * @param[in] offset `gpr` A pointer to the array where the recomp stores its
+ * @param[in] OFFSET `RecompGPR` A pointer to the array where the recomp stores its
  *                         data for N64 registers in memory.
- * @param[in] reg `gpr` The number of the target register to read from, acting
- *                      as an index into the array at `offset`.
- * @return `s8` The value stored in the N64 register `reg`.
+ * @param[in] REG `RecompGPR` The number of the target register to read from, acting
+ *                      as an index into the array at `OFFSET`.
+ * @return `s8` The value stored in the N64 register `REG`.
  */
-#define MEM_B(offset, reg) \
-    (*(int8_t*)(rdram + ((((reg) + (offset)) ^ 3) & 0x7FFFFFFF)))
+#define MEM_B(OFFSET, REG) \
+    (*(int8_t *)(rdram + ((((REG) + (OFFSET)) ^ 3) & 0x7FFFFFFFULL)))
 
 /**
  * @brief Load an unsigned 16-bit integer (a "halfword") from N64 memory.
- * @param[in] offset `gpr` A pointer to the array where the recomp stores its
+ * @param[in] OFFSET `RecompGPR` A pointer to the array where the recomp stores its
  *                         data for N64 registers in memory.
- * @param[in] reg `gpr` The number of the target register to read from, acting
- *                      as an index into the array at `offset`.
- * @return `u16` The value stored in the N64 register `reg`.
+ * @param[in] REG `RecompGPR` The number of the target register to read from, acting
+ *                      as an index into the array at `OFFSET`.
+ * @return `u16` The value stored in the N64 register `REG`.
  */
-#define MEM_HU(offset, reg) \
-    (*(uint16_t*)(rdram + ((((reg) + (offset)) ^ 2) & 0x7FFFFFFF)))
+#define MEM_HU(OFFSET, REG) \
+    (*(uint16_t *)(rdram + ((((REG) + (OFFSET)) ^ 2) & 0x7FFFFFFFULL)))
 
 /**
  * @brief Load an unsigned 8-bit integer (a "byte") from N64 memory.
- * @param[in] offset `gpr` A pointer to the array where the recomp stores its
+ * @param[in] OFFSET `RecompGPR` A pointer to the array where the recomp stores its
  *                         data for N64 registers in memory.
- * @param[in] reg `gpr` The number of the target register to read from, acting
- *                      as an index into the array at `offset`.
- * @return `u8` The value stored in the N64 register `reg`.
+ * @param[in] REG `RecompGPR` The number of the target register to read from, acting
+ *                      as an index into the array at `OFFSET`.
+ * @return `u8` The value stored in the N64 register `REG`.
  */
-#define MEM_BU(offset, reg) \
-    (*(uint8_t*)(rdram + ((((reg) + (offset)) ^ 3) & 0x7FFFFFFF)))
+#define MEM_BU(OFFSET, REG) \
+    (*(uint8_t *)(rdram + ((((REG) + (OFFSET)) ^ 3) & 0x7FFFFFFFULL)))
+
+static inline void store_doubleword(RecompRDRAM *rdram, RecompGPR val, RecompGPR offset, RecompGPR reg) {
+    *(uint32_t *)(rdram + ((reg + offset + 4) & 0x7FFFFFFFULL)) = (uint32_t)(val >> 0);
+    *(uint32_t *)(rdram + ((reg + offset + 0) & 0x7FFFFFFFULL)) = (uint32_t)(val >> 32);
+}
 
 /**
  * @brief Stores a 64-bit integer (a "doubleword") value into an N64 register.
- * @param[in] val The value to store in `reg`. Since this value is always casted
- *                into `gpr`, it can be of any numeric type.
- * @param[out] offset `gpr` A pointer to the array where the recomp stores its
- *                          data for N64 registers in memory.
- * @param[out] reg `gpr` The number of the target register to write to, acting
- *                       as an index into the array at `offset`.
+ * @param[in] VAL The value to store in `REG`. Since this value is always casted
+ *                into `RecompGPR`, it can be of any numeric type.
+ * @param[out] OFFSET `RecompGPR` A pointer to the array where the recomp stores its
+ *                                data for N64 registers in memory.
+ * @param[out] REG `RecompGPR` The number of the target register to write to, acting
+ *                             as an index into the array at `OFFSET`.
  * @return `void` Nothing.
  * @note This macro can only be used as a statement. Attempting to use it as an
  *       expression will result in a syntax error.
  */
-#define SD(val, offset, reg) { \
-    *(uint32_t*)(rdram + ((((reg) + (offset) + 4)) & 0x7FFFFFFF)) = (uint32_t)((gpr)(val) >> 0); \
-    *(uint32_t*)(rdram + ((((reg) + (offset) + 0)) & 0x7FFFFFFF)) = (uint32_t)((gpr)(val) >> 32); \
-}
+#define SD(VAL, OFFSET, REG) store_doubleword(rdram, (VAL), (OFFSET), (REG))
 
 /**
  * @brief Implementation helper for `LD`. Please use that macro instead.
  * @private
  * @deprecated Use `LD` instead.
  */
-static inline uint64_t load_doubleword(uint8_t* rdram, gpr reg, gpr offset) {
+static inline uint64_t load_doubleword(RecompRDRAM *rdram, RecompGPR reg, RecompGPR offset) {
     uint64_t ret = 0;
     uint64_t lo = (uint64_t)(uint32_t)MEM_W(reg, offset + 4);
     uint64_t hi = (uint64_t)(uint32_t)MEM_W(reg, offset + 0);
@@ -203,41 +626,41 @@ static inline uint64_t load_doubleword(uint8_t* rdram, gpr reg, gpr offset) {
 
 /**
  * @brief Loads a 64-bit integer (a "doubleword") value from an N64 register.
- * @param[in] offset `gpr` A pointer to the array where the recomp stores its
+ * @param[in] OFFSET `RecompGPR` A pointer to the array where the recomp stores its
  *                         data for N64 registers in memory.
- * @param[in] reg `gpr` The number of the target register to read from, acting
- *                      as an index into the array at `offset`.
+ * @param[in] REG `RecompGPR` The number of the target register to read from, acting
+ *                      as an index into the array at `OFFSET`.
  * @return `u64` The loaded value.
  */
-#define LD(offset, reg) \
-    load_doubleword(rdram, offset, reg)
+#define LD(OFFSET, REG) \
+    load_doubleword(rdram, OFFSET, REG)
 
 /**
  * @todo Test which part of the value is loaded by this function.
  * @brief Partially load a value from an N64 register.
  * @param[in] rdram Currently unused.
  * @param[in] initial_value TODO
- * @param[in] offset `gpr` A pointer to the array where the recomp stores its
+ * @param[in] offset `RecompGPR` A pointer to the array where the recomp stores its
  *                         data for N64 registers in memory.
- * @param[in] reg `gpr` The number of the target register to read from, acting
+ * @param[in] reg `RecompGPR` The number of the target register to read from, acting
  *                      as an index into the array at `offset`.
  * @return `s32` The loaded part of the value.
  */
-static inline gpr do_lwl(uint8_t* rdram, gpr initial_value, gpr offset, gpr reg) {
+static inline RecompGPR do_lwl(RecompRDRAM *rdram, RecompGPR initial_value, RecompGPR offset, RecompGPR reg) {
     // Calculate the overall address
-    gpr address = (offset + reg);
+    RecompGPR address = (offset + reg);
 
     // Load the aligned word
-    gpr word_address = address & ~0x3;
+    RecompGPR word_address = address & ~0x3;
     uint32_t loaded_value = MEM_W(0, word_address);
 
     // Mask the existing value and shift the loaded value appropriately
-    gpr misalignment = address & 0x3;
-    gpr masked_value = initial_value & ~(0xFFFFFFFFu << (misalignment * 8));
+    RecompGPR misalignment = address & 0x3;
+    RecompGPR masked_value = initial_value & ~(0xFFFFFFFFu << (misalignment * 8));
     loaded_value <<= (misalignment * 8);
 
     // Cast to int32_t to sign extend first
-    return (gpr)(int32_t)(masked_value | loaded_value);
+    return (RecompGPR)(int32_t)(masked_value | loaded_value);
 }
 
 /**
@@ -245,50 +668,50 @@ static inline gpr do_lwl(uint8_t* rdram, gpr initial_value, gpr offset, gpr reg)
  * @brief Partially load a value from an N64 register.
  * @param[in] rdram Currently unused.
  * @param[in] initial_value TODO
- * @param[in] offset `gpr` A pointer to the array where the recomp stores its
+ * @param[in] offset `RecompGPR` A pointer to the array where the recomp stores its
  *                         data for N64 registers in memory.
- * @param[in] reg `gpr` The number of the target register to read from, acting
+ * @param[in] reg `RecompGPR` The number of the target register to read from, acting
  *                      as an index into the array at `offset`.
  * @return `s32` The loaded part of the value.
  */
-static inline gpr do_lwr(uint8_t* rdram, gpr initial_value, gpr offset, gpr reg) {
+static inline RecompGPR do_lwr(RecompRDRAM *rdram, RecompGPR initial_value, RecompGPR offset, RecompGPR reg) {
     // Calculate the overall address
-    gpr address = (offset + reg);
+    RecompGPR address = (offset + reg);
     
     // Load the aligned word
-    gpr word_address = address & ~0x3;
+    RecompGPR word_address = address & ~0x3;
     uint32_t loaded_value = MEM_W(0, word_address);
 
     // Mask the existing value and shift the loaded value appropriately
-    gpr misalignment = address & 0x3;
-    gpr masked_value = initial_value & ~(0xFFFFFFFFu >> (24 - misalignment * 8));
+    RecompGPR misalignment = address & 0x3;
+    RecompGPR masked_value = initial_value & ~(0xFFFFFFFFu >> (24 - misalignment * 8));
     loaded_value >>= (24 - misalignment * 8);
 
     // Cast to int32_t to sign extend first
-    return (gpr)(int32_t)(masked_value | loaded_value);
+    return (RecompGPR)(int32_t)(masked_value | loaded_value);
 }
 
 /**
  * @todo Test which part of the value is stored by this function.
  * @brief Partially store a value into an N64 register.
  * @param[in] rdram Currently unused.
- * @param[out] offset `gpr` A pointer to the array where the recomp stores its
+ * @param[out] offset `RecompGPR` A pointer to the array where the recomp stores its
  *                          data for N64 registers in memory.
- * @param[out] reg `gpr` The number of the target register to write to, acting
+ * @param[out] reg `RecompGPR` The number of the target register to write to, acting
  *                       as an index into the array at `offset`.
  * @param[in] val The value you want to store.
  * @return `void` Nothing.
  */
-static inline void do_swl(uint8_t* rdram, gpr offset, gpr reg, gpr val) {
+static inline void do_swl(RecompRDRAM *rdram, RecompGPR offset, RecompGPR reg, RecompGPR val) {
     // Calculate the overall address
-    gpr address = (offset + reg);
+    RecompGPR address = (offset + reg);
 
     // Get the initial value of the aligned word
-    gpr word_address = address & ~0x3;
+    RecompGPR word_address = address & ~0x3;
     uint32_t initial_value = MEM_W(0, word_address);
 
     // Mask the initial value and shift the input value appropriately
-    gpr misalignment = address & 0x3;
+    RecompGPR misalignment = address & 0x3;
     uint32_t masked_initial_value = initial_value & ~(0xFFFFFFFFu >> (misalignment * 8));
     uint32_t shifted_input_value = ((uint32_t)val) >> (misalignment * 8);
     MEM_W(0, word_address) = masked_initial_value | shifted_input_value;
@@ -298,23 +721,23 @@ static inline void do_swl(uint8_t* rdram, gpr offset, gpr reg, gpr val) {
  * @todo Test which part of the value is stored by this function.
  * @brief Partially store a value into an N64 register.
  * @param[in] rdram Currently unused.
- * @param[out] offset `gpr` A pointer to the array where the recomp stores its
+ * @param[out] offset `RecompGPR` A pointer to the array where the recomp stores its
  *                          data for N64 registers in memory.
- * @param[out] reg `gpr` The number of the target register to write to, acting
+ * @param[out] reg `RecompGPR` The number of the target register to write to, acting
  *                       as an index into the array at `offset`.
  * @param[in] val The value you want to store.
  * @return `void` Nothing.
  */
-static inline void do_swr(uint8_t* rdram, gpr offset, gpr reg, gpr val) {
+static inline void do_swr(RecompRDRAM *rdram, RecompGPR offset, RecompGPR reg, RecompGPR val) {
     // Calculate the overall address
-    gpr address = (offset + reg);
+    RecompGPR address = (offset + reg);
 
     // Get the initial value of the aligned word
-    gpr word_address = address & ~0x3;
+    RecompGPR word_address = address & ~0x3;
     uint32_t initial_value = MEM_W(0, word_address);
 
     // Mask the initial value and shift the input value appropriately
-    gpr misalignment = address & 0x3;
+    RecompGPR misalignment = address & 0x3;
     uint32_t masked_initial_value = initial_value & ~(0xFFFFFFFFu << (24 - misalignment * 8));
     uint32_t shifted_input_value = ((uint32_t)val) << (24 - misalignment * 8);
     MEM_W(0, word_address) = masked_initial_value | shifted_input_value;
@@ -322,35 +745,35 @@ static inline void do_swr(uint8_t* rdram, gpr offset, gpr reg, gpr val) {
 
 /**
  * @brief Cast a number into a signed 32-bit integer.
- * @param[in] val The value to convert.
+ * @param[in] VAL The value to convert.
  * @return `s32` The converted value.
  */
-#define S32(val) \
-    ((int32_t)(val))
+#define S32(VAL) \
+    ((int32_t)(VAL))
 
 /**
  * @brief Cast a number into an unsigned 32-bit integer.
- * @param[in] val The value to convert.
+ * @param[in] VAL The value to convert.
  * @return `u32` The converted value.
  */
-#define U32(val) \
-    ((uint32_t)(val))
+#define U32(VAL) \
+    ((uint32_t)(VAL))
 
 /**
  * @brief Cast a number into a signed 64-bit integer.
- * @param[in] val The value to convert.
+ * @param[in] VAL The value to convert.
  * @return `s64` The converted value.
  */
-#define S64(val) \
-    ((int64_t)(val))
+#define S64(VAL) \
+    ((int64_t)(VAL))
 
 /**
  * @brief Cast a number into an unsigned 64-bit integer.
- * @param[in] val The value to convert.
+ * @param[in] VAL The value to convert.
  * @return `u64` The converted value.
  */
-#define U64(val) \
-    ((uint64_t)(val))
+#define U64(VAL) \
+    ((uint64_t)(VAL))
 
 /**
  * @brief Multiply two 32-bit ("single-precision") floating-point values.
@@ -391,117 +814,89 @@ static inline void do_swr(uint8_t* rdram, gpr offset, gpr reg, gpr val) {
 /**
  * @brief Convert a signed 32-bit integer (a "word") into a 32-bit ("single-
  *        precision") floating-point value.
- * @param[in] val `s32` The value to convert.
+ * @param[in] VAL `s32` The value to convert.
  * @return `float` The converted value.
  */
-#define CVT_S_W(val) \
-    ((float)((int32_t)(val)))
+#define CVT_S_W(VAL) \
+    ((float)((int32_t)(VAL)))
 
 /**
  * @brief Convert a signed 32-bit integer (a "word") into a 64-bit ("double-
  *        precision") floating-point value.
- * @param[in] val `s32` The value to convert.
+ * @param[in] VAL `s32` The value to convert.
  * @return `double` The converted value.
  */
-#define CVT_D_W(val) \
-    ((double)((int32_t)(val)))
+#define CVT_D_W(VAL) \
+    ((double)((int32_t)(VAL)))
 
 /**
  * @brief Convert a 32-bit ("single-precision") floating-point value into a
  *        64-bit ("double-precision") floating-point value.
- * @param[in] val `float` The value to convert.
+ * @param[in] VAL `float` The value to convert.
  * @return `double` The converted value.
  */
-#define CVT_D_S(val) \
-    ((double)(val))
+#define CVT_D_S(VAL) \
+    ((double)(VAL))
 
 /**
  * @brief Convert a 64-bit ("double-precision") floating-point value into a
  *        32-bit ("single-precision") floating-point value.
- * @param[in] val `double` The value to convert.
+ * @param[in] VAL `double` The value to convert.
  * @return `float` The converted value.
  */
-#define CVT_S_D(val) \
-    ((float)(val))
+#define CVT_S_D(VAL) \
+    ((float)(VAL))
 
 /**
  * @brief Convert a 32-bit ("single-precision") floating-point value into a
  *        32-bit integer (a "word") by truncating, thus cutting off any decimal
  *        places, rounding towards zero and losing some precision (especially if
  *        the value is very small or extremely large).
- * @param[in] val `float` The value to convert.
+ * @param[in] VAL `float` The value to convert.
  * @return `s32` The converted value.
  */
-#define TRUNC_W_S(val) \
-    ((int32_t)(val))
+#define TRUNC_W_S(VAL) \
+    ((int32_t)(VAL))
 
 /**
  * @brief Convert a 64-bit ("double-precision") floating-point value into a
  *        32-bit integer (a "word") by truncating, thus cutting off any decimal
  *        places, rounding towards zero and losing some precision (especially if
  *        the value is very small or extremely large).
- * @param[in] val `double` The value to convert.
+ * @param[in] VAL `double` The value to convert.
  * @return `s32` The converted value.
  */
-#define TRUNC_W_D(val) \
-    ((int32_t)(val))
+#define TRUNC_W_D(VAL) \
+    ((int32_t)(VAL))
 
 /**
  * @brief Convert a 32-bit ("single-precision") floating-point value into a
  *        64-bit integer (a "long") by truncating, thus cutting off any decimal
  *        places, rounding towards zero and losing some precision (especially if
  *        the value is very small or extremely large).
- * @param[in] val `float` The value to convert.
+ * @param[in] VAL `float` The value to convert.
  * @return `s64` The converted value.
  */
-#define TRUNC_L_S(val) \
-    ((int64_t)(val))
+#define TRUNC_L_S(VAL) \
+    ((int64_t)(VAL))
 
 /**
  * @brief Convert a 64-bit ("double-precision") floating-point value into a
  *        64-bit integer (a "long") by truncating, thus cutting off any decimal
  *        places, rounding towards zero and losing some precision (especially if
  *        the value is very small or extremely large).
- * @param[in] val `double` The value to convert.
+ * @param[in] VAL `double` The value to convert.
  * @return `s64` The converted value.
  */
-#define TRUNC_L_D(val) \
-    ((int64_t)(val))
-
-/**
- * @brief A type representing the possible ways to round a floating-point value,
- *        converting it to an integer.
- */
-typedef enum ModRecompRoundingMode {
-    /**
-     * @brief Performs mathemathically correct rounding to the nearest integer.
-     */
-    ModRecompRoundingMode_Nearest = 0U,
-    /**
-     * @brief Round towards zero. Rounds down for positive values and rounds up
-     *        for negative values.
-     * 
-     * This is usually the fastest rounding method, as it can directly cast the
-     * given floating-point value into an integer without calling any math
-     * functions from the C standard library first.
-     */
-    ModRecompRoundingMode_Truncate = 1U,
-    /**
-     * @brief Round up towards positive infinity.
-     */
-    ModRecompRoundingMode_Ceiling = 2U,
-    /**
-     * @brief Round down towards negative infinity.
-     */
-    ModRecompRoundingMode_Floor = 3U,
-} ModRecompRoundingMode;
+#define TRUNC_L_D(VAL) \
+    ((int64_t)(VAL))
 
 /**
  * @brief A constant that you may use as a default when calling a function that
  *        requires you to explicitly pass a rounding mode flag when you don't
  *        care about the specifics.
  */
-#define DEFAULT_ROUNDING_MODE ModRecompRoundingMode_Nearest
+#define DEFAULT_ROUNDING_MODE RecompRoundingMode_Nearest
 
 /**
  * @brief Convert a 32-bit ("single-precision") floating-point value into a
@@ -512,17 +907,17 @@ typedef enum ModRecompRoundingMode {
  * function directly.
  *
  * @param[in] val `float` The value to round.
- * @param[in] rounding_mode `ModRecompRoundingMode` The rounding mode to use.
+ * @param[in] rounding_mode `RecompRoundingMode` The rounding mode to use.
  * @return `s32` The result of rounding `val` with the given `rounding_mode`.
  */
-static inline int32_t do_cvt_w_s(float val, ModRecompRoundingMode rounding_mode) {
+static inline int32_t do_cvt_w_s(float val, RecompRoundingMode rounding_mode) {
     switch (rounding_mode) {
-        case ModRecompRoundingMode_Nearest:  return (int32_t)lroundf(val);
-        case ModRecompRoundingMode_Truncate: return (int32_t)val;
-        case ModRecompRoundingMode_Ceiling:  return (int32_t)ceilf(val);
-        case ModRecompRoundingMode_Floor:    return (int32_t)floorf(val);
+        case RecompRoundingMode_Nearest:  return (int32_t)lroundf(val);
+        case RecompRoundingMode_Truncate: return (int32_t)val;
+        case RecompRoundingMode_Ceiling:  return (int32_t)ceilf(val);
+        case RecompRoundingMode_Floor:    return (int32_t)floorf(val);
     }
-    fprintf(stderr, "Invalid rounding mode! (ModRecompRoundingMode expected, got: %d)", (int)rounding_mode);
+    fprintf(stderr, "Invalid rounding mode! (RecompRoundingMode expected, got: %d)", (int)rounding_mode);
     assert(0);
     return 0;
 }
@@ -531,11 +926,11 @@ static inline int32_t do_cvt_w_s(float val, ModRecompRoundingMode rounding_mode)
  * @brief Convert a 32-bit ("single-precision") floating-point value into a
  *        32-bit signed integer (a "word") using the default rounding mode.
  *
- * @param[in] val `float` The value to round.
- * @return `s32` The result of rounding `val`.
+ * @param[in] VAL `float` The value to round.
+ * @return `s32` The result of rounding `VAL`.
  */
-#define CVT_W_S(val) \
-    do_cvt_w_s(val, rounding_mode)
+#define CVT_W_S(VAL) \
+    do_cvt_w_s(VAL, rounding_mode)
 
 /**
  * @brief Convert a 64-bit ("double-precision") floating-point value into a
@@ -546,17 +941,17 @@ static inline int32_t do_cvt_w_s(float val, ModRecompRoundingMode rounding_mode)
  * function directly.
  *
  * @param[in] val `double` The value to round.
- * @param[in] rounding_mode `ModRecompRoundingMode` The rounding mode to use.
+ * @param[in] rounding_mode `RecompRoundingMode` The rounding mode to use.
  * @return `s32` The result of rounding `val` with the given `rounding_mode`.
  */
-static inline int32_t do_cvt_w_d(double val, ModRecompRoundingMode rounding_mode) {
+static inline int32_t do_cvt_w_d(double val, RecompRoundingMode rounding_mode) {
     switch (rounding_mode) {
-        case ModRecompRoundingMode_Nearest:  return (int32_t)lround(val);
-        case ModRecompRoundingMode_Truncate: return (int32_t)val;
-        case ModRecompRoundingMode_Ceiling:  return (int32_t)ceil(val);
-        case ModRecompRoundingMode_Floor:    return (int32_t)floor(val);
+        case RecompRoundingMode_Nearest:  return (int32_t)lround(val);
+        case RecompRoundingMode_Truncate: return (int32_t)val;
+        case RecompRoundingMode_Ceiling:  return (int32_t)ceil(val);
+        case RecompRoundingMode_Floor:    return (int32_t)floor(val);
     }
-    fprintf(stderr, "Invalid rounding mode! (ModRecompRoundingMode expected, got: %d)", (int)rounding_mode);
+    fprintf(stderr, "Invalid rounding mode! (RecompRoundingMode expected, got: %d)", (int)rounding_mode);
     assert(0);
     return 0;
 }
@@ -565,407 +960,32 @@ static inline int32_t do_cvt_w_d(double val, ModRecompRoundingMode rounding_mode
  * @brief Convert a 64-bit ("double-precision") floating-point value into a
  *        32-bit signed integer (a "word") using the default rounding mode.
  *
- * @param[in] val `double` The value to round.
- * @return `s32` The result of rounding `val`.
+ * @param[in] VAL `double` The value to round.
+ * @return `s32` The result of rounding `VAL`.
  */
-#define CVT_W_D(val) \
-    do_cvt_w_d(val, rounding_mode)
+#define CVT_W_D(VAL) \
+    do_cvt_w_d(VAL, rounding_mode)
 
 /**
  * @brief Check if a floating-point value is NaN (not a number), force stopping
  *        the game immediately and logging a message to the terminal if it is.
- * @param[in] val `float|double` The value to check.
+ * @param[in] VAL `float|double` The value to check.
  * @return `void` Nothing.
  */
-#define NAN_CHECK(val) \
-    assert(val == val)
-
-/**
- * @brief A type which represents the data stored in an N64 floating-point
- *        register, allowing to access it as various different numeric types.
- * @todo This should probably be renamed to `fpr_t`.
- */
-typedef union {
-    double d;
-    struct {
-        float fl;
-        float fh;
-    };
-    struct {
-        uint32_t u32l;
-        uint32_t u32h;
-    };
-    uint64_t u64;
-} fpr;
-
-/**
- * @brief A type which represents the entire state of the N64 processor.
- * @todo This should probably be renamed to `recomp_context_t`.
- */
-typedef struct {
-    /**
-     * Constant zero register. Always reads as 0. Writes are ignored.
-     */
-    gpr r0;
-
-    /**
-     * Assembler temporary register. Not preserved across calls.
-     */
-    gpr r1;
-
-    /**
-     * Function return value or expression result. Also used as argument for
-	 * leaf functions.
-     */
-    gpr r2;
-
-    /**
-     * Secondary return value register.
-     */
-    gpr r3;
-
-    /**
-     * First argument register, used to pass arguments to functions.
-     */
-    gpr r4;
-
-    /**
-     * Second argument register.
-     */
-    gpr r5;
-
-    /**
-     * Third argument register.
-     */
-    gpr r6;
-
-    /**
-     * Fourth argument register.
-     */
-    gpr r7;
-
-    /**
-     * Temporary register. Not preserved across function calls.
-     */
-    gpr r8;
-
-    /**
-     * Temporary register. Not preserved across function calls.
-     */
-    gpr r9;
-
-    /**
-     * Temporary register. Not preserved across function calls.
-     */
-    gpr r10;
-
-    /**
-     * Temporary register. Not preserved across function calls.
-     */
-    gpr r11;
-
-    /**
-     * Temporary register. Not preserved across function calls.
-     */
-    gpr r12;
-
-    /**
-     * Temporary register. Not preserved across function calls.
-     */
-    gpr r13;
-
-    /**
-     * Temporary register. Not preserved across function calls.
-     */
-    gpr r14;
-
-    /**
-     * Temporary register. Not preserved across function calls.
-     */
-    gpr r15;
-
-    /**
-     * Saved register. Preserved across function calls.
-     */
-    gpr r16;
-
-    /**
-     * Saved register. Preserved across function calls.
-     */
-    gpr r17;
-
-    /**
-     * Saved register. Preserved across function calls.
-     */
-    gpr r18;
-
-    /**
-     * Saved register. Preserved across function calls.
-     */
-    gpr r19;
-
-    /**
-     * Saved register. Preserved across function calls.
-     */
-    gpr r20;
-
-    /**
-     * Saved register. Preserved across function calls.
-     */
-    gpr r21;
-
-    /**
-     * Saved register. Preserved across function calls.
-     */
-    gpr r22;
-
-    /**
-     * Saved register. Preserved across function calls.
-     */
-    gpr r23;
-
-    /**
-     * Temporary register. Not preserved across function calls.
-     */
-    gpr r24;
-
-    /**
-     * Temporary register. Not preserved across function calls.
-     */
-    gpr r25;
-
-    /**
-     * Reserved for OS kernel. Do not use.
-     */
-    gpr r26;
-
-    /**
-     * Reserved for OS kernel. Do not use.
-     */
-    gpr r27;
-
-    /**
-     * Global pointer (gp) used for addressing static data.
-     */
-    gpr r28;
-
-    /**
-     * Stack pointer (sp) used to manage the call stack.
-     */
-    gpr r29;
-
-    /**
-     * Frame pointer (fp) or another saved register depending on calling
-	 * convention.
-     */
-    gpr r30;
-
-    /**
-     * Return address (ra) used for storing the function return address.
-     */
-    gpr r31;
-
-    /**
-     * Floating-point register f0, often used for temporary values.
-     */
-    fpr f0;
-
-    /**
-     * Floating-point register f1, used for temporary computations.
-     */
-    fpr f1;
-
-    /**
-     * Floating-point register f2, used for intermediate floating-point results.
-     */
-    fpr f2;
-
-    /**
-     * Floating-point register f3, used for intermediate floating-point results.
-     */
-    fpr f3;
-
-    /**
-     * Floating-point register f4, used for intermediate floating-point results.
-     */
-    fpr f4;
-
-    /**
-     * Floating-point register f5, general-purpose FP temporary.
-     */
-    fpr f5;
-
-    /**
-     * Floating-point register f6, general-purpose FP temporary.
-     */
-    fpr f6;
-
-    /**
-     * Floating-point register f7, general-purpose FP temporary.
-     */
-    fpr f7;
-
-    /**
-     * Floating-point register f8, general-purpose FP temporary.
-     */
-    fpr f8;
-
-    /**
-     * Floating-point register f9, general-purpose FP temporary.
-     */
-    fpr f9;
-
-    /**
-     * Floating-point register f10, general-purpose FP temporary.
-     */
-    fpr f10;
-
-    /**
-     * Floating-point register f11, general-purpose FP temporary.
-     */
-    fpr f11;
-
-    /**
-     * Floating-point register f12, used for function argument or return value.
-     */
-    fpr f12;
-
-    /**
-     * Floating-point register f13, used for function argument or return value.
-     */
-    fpr f13;
-
-    /**
-     * Floating-point register f14, general-purpose FP value.
-     */
-    fpr f14;
-
-    /**
-     * Floating-point register f15, general-purpose FP value.
-     */
-    fpr f15;
-
-    /**
-     * Floating-point register f16, general-purpose FP value.
-     */
-    fpr f16;
-
-    /**
-     * Floating-point register f17, general-purpose FP value.
-     */
-    fpr f17;
-
-    /**
-     * Floating-point register f18, general-purpose FP value.
-     */
-    fpr f18;
-
-    /**
-     * Floating-point register f19, general-purpose FP value.
-     */
-    fpr f19;
-
-    /**
-     * Floating-point register f20, general-purpose FP value.
-     */
-    fpr f20;
-
-    /**
-     * Floating-point register f21, general-purpose FP value.
-     */
-    fpr f21;
-
-    /**
-     * Floating-point register f22, general-purpose FP value.
-     */
-    fpr f22;
-
-    /**
-     * Floating-point register f23, general-purpose FP value.
-     */
-    fpr f23;
-
-    /**
-     * Floating-point register f24, general-purpose FP value.
-     */
-    fpr f24;
-
-    /**
-     * Floating-point register f25, general-purpose FP value.
-     */
-    fpr f25;
-
-    /**
-     * Floating-point register f26, general-purpose FP value.
-     */
-    fpr f26;
-
-    /**
-     * Floating-point register f27, general-purpose FP value.
-     */
-    fpr f27;
-
-    /**
-     * Floating-point register f28, general-purpose FP value.
-     */
-    fpr f28;
-
-    /**
-     * Floating-point register f29, general-purpose FP value.
-     */
-    fpr f29;
-
-    /**
-     * Floating-point register f30, general-purpose FP value.
-     */
-    fpr f30;
-
-    /**
-     * Floating-point register f31, often used as a return value register or
-     * temporary.
-     */
-    fpr f31;
-
-    /**
-     * The high and low registers are used for certain arithmetic operations
-     * like integer multiplication, where the output may be way to large to fit
-     * into a single 64-bit register. These are essentially used as if they were
-     * a single, 128-bit-wide register.
-    */
-    uint64_t hi, lo;
-
-    /**
-     * Pointer to the odd-numbered halves of paired single-precision FPRs. Used
-     * for operations in 32-bit mode.
-     */
-    uint32_t* f_odd;
-
-    /**
-     * @todo This should be made into an `enum`.
-     * Status register of the CPU (coprocessor 0 status register). Controls
-     * system-level state like interrupt masking, exception mode, etc.
-     */
-    uint32_t status_reg;
-
-    /**
-     * @todo This should be made into an `enum`.
-     * Indicates whether the FPU is in 64-bit or 32-bit mode.
-     * This affects how FP registers and operations are interpreted.
-     */
-    uint8_t mips3_float_mode;
-} recomp_context;
+#define NAN_CHECK(VAL) \
+    assert((VAL) == (VAL))
 
 /**
  * @todo Explain *why* this is here / why someone would actually need this.
  * @brief Check if the target is an even float register or that the MIPS3 float
  *        mode is enabled, force stopping the game immediately and logging a
  *        message to the terminal otherwise.
- * @param[in] ctx `recomp_context*` The current execution context of the recomp.
- * @param[in] idx `size_t` The index number for the register to check.
+ * @param[in] CTX `RecompContext*` The current execution context of the recomp.
+ * @param[in] IDX `size_t` The index number for the register to check.
  * @return `void` Nothing.
  */
-#define CHECK_FR(ctx, idx) \
-    assert(((idx) & 1) == 0 || (ctx)->mips3_float_mode)
+#define CHECK_FR(CTX, IDX) \
+    assert(((IDX) & 1) == 0 || (CTX)->mips3_float_mode)
 
 // Shouldn't this entire header be wrapped in an `extern "C"`-block for C++?
 #ifdef __cplusplus
@@ -985,10 +1005,10 @@ extern "C" {
  * Do note that `recomp_func_t` itself it not a pointer type.
  *
  * @param[in] rdram `u8*` A view into the current N64 RAM.
- * @param[in] ctx `recomp_context*` The current execution context of the recomp.
+ * @param[in] ctx `RecompContext*` The current execution context of the recomp.
  * @return `void` Nothing.
  */
-typedef void (recomp_func_t)(uint8_t* rdram, recomp_context* ctx);
+typedef void (recomp_func_t)(RecompRDRAM *rdram, RecompContext* ctx);
 
 /**
  * @todo Test if the returned pointer is nullable or not.
@@ -1020,11 +1040,11 @@ extern RECOMP_EXPORT recomp_func_t* (*get_function)(int32_t vram);
  * as well as https://n64brew.dev/wiki/Reality_Signal_Processor for more
  * information on how this works and what you can pass in for `value`.
  *
- * @param[in] ctx `recomp_context*` The current execution context of the recomp.
- * @param[in] value `gpr` The value to write into the `COP0` register.
+ * @param[in] ctx `RecompContext*` The current execution context of the recomp.
+ * @param[in] value `RecompGPR` The value to write into the `COP0` register.
  * @return `void` Nothing.
  */
-extern RECOMP_EXPORT void (*cop0_status_write)(recomp_context* ctx, gpr value);
+extern RECOMP_EXPORT void (*cop0_status_write)(RecompContext* ctx, RecompGPR value);
 
 /**
  * @todo Document whether `ctx` is an `[in]` param or an `[inout]` param.
@@ -1038,10 +1058,10 @@ extern RECOMP_EXPORT void (*cop0_status_write)(recomp_context* ctx, gpr value);
  * as well as https://n64brew.dev/wiki/Reality_Signal_Processor for more
  * information on how this works and what you can pass in for `value`.
  *
- * @param[in] ctx `recomp_context*` The current execution context of the recomp.
- * @return `gpr` The current value stored in the `COP0` register.
+ * @param[in] ctx `RecompContext*` The current execution context of the recomp.
+ * @return `RecompGPR` The current value stored in the `COP0` register.
  */
-extern RECOMP_EXPORT gpr (*cop0_status_read)(recomp_context* ctx);
+extern RECOMP_EXPORT RecompGPR (*cop0_status_read)(RecompContext* ctx);
 
 /**
  * @brief ???
@@ -1071,8 +1091,8 @@ extern RECOMP_EXPORT void (*switch_error)(const char* func, uint32_t vram, uint3
  */
 extern RECOMP_EXPORT void (*do_break)(uint32_t vram);
 
-#define LOOKUP_FUNC(val) \
-    get_function((int32_t)(val))
+#define LOOKUP_FUNC(VAL) \
+    get_function((int32_t)(VAL))
 
 // Some of the comments below have been written by ChatGPT.
 
@@ -1130,24 +1150,24 @@ extern RECOMP_EXPORT int32_t section_addresses[];
  * Used to generate the immediate value for a `lui` instruction in recompiled
  * MIPS code.
  *
- * @param[in] section_index `gpr` Index into `section_addresses` array.
- * @param[in] offset `gpr` Offset within the section.
- * @return `gpr` Adjusted upper 16 bits of the relocated address.
+ * @param[in] section_index `RecompGPR` Index into `section_addresses` array.
+ * @param[in] OFFSET `RecompGPR` Offset within the section.
+ * @return `RecompGPR` Adjusted upper 16 bits of the relocated address.
  */
-#define RELOC_HI16(section_index, offset) \
-    HI16(section_addresses[section_index] + (offset))
+#define RELOC_HI16(section_index, OFFSET) \
+    HI16(section_addresses[section_index] + (OFFSET))
 
 /**
  * @brief Extracts the lower 16 bits of a relocated address for a given section.
  *
  * Used to generate the immediate value for an `ori` instruction in recompiled MIPS code.
  *
- * @param[in] section_index `gpr` Index into `section_addresses` array.
- * @param[in] offset `gpr` Offset within the section.
- * @return `gpr` Lower 16 bits of the relocated address.
+ * @param[in] section_index `RecompGPR` Index into `section_addresses` array.
+ * @param[in] OFFSET `RecompGPR` Offset within the section.
+ * @return `RecompGPR` Lower 16 bits of the relocated address.
  */
-#define RELOC_LO16(section_index, offset) \
-    LO16(section_addresses[section_index] + (offset))
+#define RELOC_LO16(section_index, OFFSET) \
+    LO16(section_addresses[section_index] + (OFFSET))
 
 /**
  * @brief Computes the adjusted upper 16 bits of a reference (original) address
@@ -1155,12 +1175,12 @@ extern RECOMP_EXPORT int32_t section_addresses[];
  *
  * Useful for validation or symbol resolution against the original binary layout.
  *
- * @param[in] section_index `gpr` Index into `reference_section_addresses` array.
- * @param[in] offset `gpr` Offset within the section.
- * @return `gpr` Adjusted upper 16 bits of the reference address.
+ * @param[in] section_index `RecompGPR` Index into `reference_section_addresses` array.
+ * @param[in] OFFSET `RecompGPR` Offset within the section.
+ * @return `RecompGPR` Adjusted upper 16 bits of the reference address.
  */
-#define REF_RELOC_HI16(section_index, offset) \
-    HI16(reference_section_addresses[section_index] + (offset))
+#define REF_RELOC_HI16(section_index, OFFSET) \
+    HI16(reference_section_addresses[section_index] + (OFFSET))
 
 /**
  * @brief Extracts the lower 16 bits of a reference (original) address for a
@@ -1169,23 +1189,23 @@ extern RECOMP_EXPORT int32_t section_addresses[];
  * Useful for validation or symbol resolution against the original binary
  * layout.
  *
- * @param[in] section_index `gpr` Index into `reference_section_addresses` array.
- * @param[in] offset `gpr` Offset within the section.
- * @return `gpr` Lower 16 bits of the reference address.
+ * @param[in] section_index `RecompGPR` Index into `reference_section_addresses` array.
+ * @param[in] OFFSET `RecompGPR` Offset within the section.
+ * @return `RecompGPR` Lower 16 bits of the reference address.
  */
-#define REF_RELOC_LO16(section_index, offset) \
-    LO16(reference_section_addresses[section_index] + (offset))
+#define REF_RELOC_LO16(section_index, OFFSET) \
+    LO16(reference_section_addresses[section_index] + (OFFSET))
 
 /**
  * @brief I'm guessing this function is called back when an attempt is made to
  *        invoke a system call from N64/mod code, but I have no idea if that's
  *        actually what it does.
  * @param[inout] rdram `uint8_t*` 
- * @param[in] ctx `recomp_context*` The current execution context of the recomp.
+ * @param[in] ctx `RecompContext*` The current execution context of the recomp.
  * @param[in] instruction_vram `s32` 
  * @return `void` Nothing.
  */
-void recomp_syscall_handler(uint8_t* rdram, recomp_context* ctx, int32_t instruction_vram);
+void recomp_syscall_handler(RecompRDRAM *rdram, RecompContext* ctx, int32_t instruction_vram);
 
 /**
  * @brief I'm guessing this opens the recomp's pause menu (the dark-purple one)?

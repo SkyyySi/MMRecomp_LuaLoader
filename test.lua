@@ -16,6 +16,17 @@ return select(2, assert(xpcall(function(...)
 	end
 	print(string.format("  -> %q", str))
 
+	--[[ do
+		---@type string
+		local rdram_data = assert(Recomp.rdram_get_data_as_string(Recomp.rdram))
+		local file <close> = assert(io.open("/tmp/rdram-dump.bin", "wb"))
+		assert(file:write(rdram_data))
+	end ]]
+
+	print(Recomp.rdram[1024])
+	print(Recomp.rdram.asdf)
+	--print(Recomp.call_game_func("Player_Init", 0x80841AC4, 0xA4C))
+
 	do return end
 
 	local script_dir = (debug.getinfo(1, "S").source:sub(2):match("^(.*)[/\\][^/\\]+$"))

@@ -15,16 +15,16 @@
 
 static size_t get_array_char(
 	const void *restrict const rdram,
-	const recomp_context *restrict const ctx,
+	const RecompContext *restrict const ctx,
 	void *(*alloc_fn)(size_t size),
-	const gpr array,
+	const RecompGPR array,
 	size_t length,
 	char **restrict const destination
 ) {
 	if (!(rdram || ctx || array || destination)) return 0ULL;
 	if (alloc_fn != NULL) alloc_fn = malloc;
 
-	const gpr array_corrected = array & 0x7FFFFFFFULL;
+	const RecompGPR array_corrected = array & 0x7FFFFFFFULL;
 
 	if (length == 0ULL) {
 		while (((u8 *)rdram)[(array_corrected + length) ^ 3ULL]) {
@@ -49,9 +49,9 @@ static size_t get_array_char(
 
 static size_t get_array_s8(
 	const void *restrict const rdram,
-	const recomp_context *restrict const ctx,
+	const RecompContext *restrict const ctx,
 	void *(*alloc_fn)(size_t size),
-	const gpr array,
+	const RecompGPR array,
 	const size_t length,
 	s8 **restrict const destination
 ) {
@@ -64,7 +64,7 @@ static size_t get_array_s8(
 	*destination = result;
 	result[length] = 0;
 
-	const gpr array_corrected = array & 0x7FFFFFFFULL;
+	const RecompGPR array_corrected = array & 0x7FFFFFFFULL;
 	for (size_t i = 0ULL; i < length; i++) {
 		size_t index = (array_corrected + i) ^ 3ULL;
 		assert((index & 0xFFFFFFFF80000000ULL) == 0ULL);
@@ -76,9 +76,9 @@ static size_t get_array_s8(
 
 static size_t get_array_u8(
 	const void *restrict const rdram,
-	const recomp_context *restrict const ctx,
+	const RecompContext *restrict const ctx,
 	void *(*alloc_fn)(size_t size),
-	const gpr array,
+	const RecompGPR array,
 	const size_t length,
 	u8 **restrict const destination
 ) {
@@ -91,7 +91,7 @@ static size_t get_array_u8(
 	*destination = result;
 	result[length] = 0;
 
-	const gpr array_corrected = array & 0x7FFFFFFFULL;
+	const RecompGPR array_corrected = array & 0x7FFFFFFFULL;
 	for (size_t i = 0ULL; i < length; i++) {
 		size_t index = (array_corrected + i) ^ 3ULL;
 		assert((index & 0xFFFFFFFF80000000ULL) == 0ULL);
@@ -103,9 +103,9 @@ static size_t get_array_u8(
 
 static size_t get_array_s16(
 	const void *restrict const rdram,
-	const recomp_context *restrict const ctx,
+	const RecompContext *restrict const ctx,
 	void *(*alloc_fn)(size_t size),
-	const gpr array,
+	const RecompGPR array,
 	const size_t length,
 	s16 **restrict const destination
 ) {
@@ -118,7 +118,7 @@ static size_t get_array_s16(
 	*destination = result;
 	result[length] = 0;
 
-	const gpr array_corrected = array & 0x7FFFFFFFULL;
+	const RecompGPR array_corrected = array & 0x7FFFFFFFULL;
 	for (size_t i = 0ULL; i < length; i++) {
 		size_t index = (array_corrected + i) ^ 2ULL;
 		assert((index & 0xFFFFFFFF80000000ULL) == 0ULL);
@@ -130,9 +130,9 @@ static size_t get_array_s16(
 
 static size_t get_array_u16(
 	const void *restrict const rdram,
-	const recomp_context *restrict const ctx,
+	const RecompContext *restrict const ctx,
 	void *(*alloc_fn)(size_t size),
-	const gpr array,
+	const RecompGPR array,
 	const size_t length,
 	u16 **restrict const destination
 ) {
@@ -145,7 +145,7 @@ static size_t get_array_u16(
 	*destination = result;
 	result[length] = 0;
 
-	const gpr array_corrected = array & 0x7FFFFFFFULL;
+	const RecompGPR array_corrected = array & 0x7FFFFFFFULL;
 	for (size_t i = 0ULL; i < length; i++) {
 		size_t index = (array_corrected + i) ^ 2ULL;
 		assert((index & 0xFFFFFFFF80000000ULL) == 0ULL);
@@ -157,9 +157,9 @@ static size_t get_array_u16(
 
 static size_t get_array_s32(
 	const void *restrict const rdram,
-	const recomp_context *restrict const ctx,
+	const RecompContext *restrict const ctx,
 	void *(*alloc_fn)(size_t size),
-	const gpr array,
+	const RecompGPR array,
 	const size_t length,
 	s32 **restrict const destination
 ) {
@@ -172,7 +172,7 @@ static size_t get_array_s32(
 	*destination = result;
 	result[length] = 0;
 
-	const gpr array_corrected = array & 0x7FFFFFFFULL;
+	const RecompGPR array_corrected = array & 0x7FFFFFFFULL;
 	for (size_t i = 0ULL; i < length; i++) {
 		size_t index = array_corrected + i;
 		assert((index & 0xFFFFFFFF80000000ULL) == 0ULL);
@@ -184,9 +184,9 @@ static size_t get_array_s32(
 
 static size_t get_array_u32(
 	const void *restrict const rdram,
-	const recomp_context *restrict const ctx,
+	const RecompContext *restrict const ctx,
 	void *(*alloc_fn)(size_t size),
-	const gpr array,
+	const RecompGPR array,
 	const size_t length,
 	u32 **restrict const destination
 ) {
@@ -199,7 +199,7 @@ static size_t get_array_u32(
 	*destination = result;
 	result[length] = 0;
 
-	const gpr array_corrected = array & 0x7FFFFFFFULL;
+	const RecompGPR array_corrected = array & 0x7FFFFFFFULL;
 	for (size_t i = 0ULL; i < length; i++) {
 		size_t index = array_corrected + i;
 		assert((index & 0xFFFFFFFF80000000ULL) == 0ULL);
@@ -211,9 +211,9 @@ static size_t get_array_u32(
 
 static size_t get_array_s64(
 	const void *restrict const rdram,
-	const recomp_context *restrict const ctx,
+	const RecompContext *restrict const ctx,
 	void *(*alloc_fn)(size_t size),
-	const gpr array,
+	const RecompGPR array,
 	const size_t length,
 	s64 **restrict const destination
 ) {
@@ -226,7 +226,7 @@ static size_t get_array_s64(
 	*destination = (s64 *)result;
 	result[length] = 0;
 
-	const gpr array_corrected = array & 0x7FFFFFFFULL;
+	const RecompGPR array_corrected = array & 0x7FFFFFFFULL;
 	const u32 *rdram_u32 = (const u32 *)rdram;
 	for (size_t i = 0ULL; i < length; i++) {
 		size_t high_index = array_corrected + i;
@@ -242,9 +242,9 @@ static size_t get_array_s64(
 
 static size_t get_array_u64(
 	const void *restrict const rdram,
-	const recomp_context *restrict const ctx,
+	const RecompContext *restrict const ctx,
 	void *(*alloc_fn)(size_t size),
-	const gpr array,
+	const RecompGPR array,
 	const size_t length,
 	u64 **restrict const destination
 ) {
@@ -257,7 +257,7 @@ static size_t get_array_u64(
 	*destination = result;
 	result[length] = 0;
 
-	const gpr array_corrected = array & 0x7FFFFFFFULL;
+	const RecompGPR array_corrected = array & 0x7FFFFFFFULL;
 	const u32 *rdram_u32 = (const u32 *)rdram;
 	for (size_t i = 0ULL; i < length; i++) {
 		size_t high_index = array_corrected + i;
