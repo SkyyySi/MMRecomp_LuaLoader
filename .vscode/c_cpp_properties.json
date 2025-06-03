@@ -18,7 +18,7 @@
                 "NULL=((void *)0)"
             ],
             "compilerPath": "gcc",
-            "cStandard": "c23",
+            "cStandard": "gnu23",
             "intelliSenseMode": "${default}"
         }
     ],

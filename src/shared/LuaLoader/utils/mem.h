@@ -10,7 +10,7 @@
 #include <math.h>
 
 #include "../mod_recomp.h"
-#include "./logging.h"
+//#include "./logging.h"
 #include "./types.h"
 
 static void cleanup_free(void *ptr_to_object_arg) {
