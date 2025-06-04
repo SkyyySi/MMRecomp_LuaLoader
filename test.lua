@@ -6,7 +6,7 @@ return select(2, assert(xpcall(function(...)
 	--[[ for k, v in pairs(Recomp) do
 		print(string.format("Recomp.%s = %s -> %s", tostring(k), tostring(v), tostring(getmetatable(v))))
 	end ]]
-	local str = ""
+	--[[ local str = ""
 	for i = 1, 31 do
 		local index = (0x801f9ad8 + i) & 0x7FFFFFFF
 		local byte = Recomp.rdram[index]
@@ -14,7 +14,7 @@ return select(2, assert(xpcall(function(...)
 		str = str .. char
 		-- print(string.format("Recomp.rdram[0x%08X] = 0x%02X -> %q", index, byte, char))
 	end
-	print(string.format("  -> %q", str))
+	print(string.format("  -> %q", str)) ]]
 
 	--[[ do
 		---@type string

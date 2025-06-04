@@ -13,29 +13,16 @@
 #include "modding.h"
 #include "global.h"
 
-typedef union HostPointer {
-	u64 u64;
-	struct {
-		u32 u32_le_low;
-		u32 u32_le_high;
-	};
-	struct {
-		u32 u32_be_high;
-		u32 u32_be_low;
-	};
-} HostPointer;
-
-#define HOST_PTR(_TYPE) HostPointer
-
 typedef struct {
-	HOST_PTR(lua_State) L;
+	u64 L;
 	const char *script_code;
 	size_t script_code_size;
 } LuaLoader_InvokeScriptCodeArgs;
 
-RECOMP_IMPORT(".", HOST_PTR(lua_State) LuaLoader_Init(void));
-RECOMP_IMPORT(".", void LuaLoader_Deinit(HOST_PTR(lua_State) L));
+RECOMP_IMPORT(".", u64 LuaLoader_Init(void));
+RECOMP_IMPORT(".", void LuaLoader_Deinit(u64 L));
 RECOMP_IMPORT(".", void LuaLoader_InvokeScriptCode(LuaLoader_InvokeScriptCodeArgs *args));
-RECOMP_IMPORT(".", void LuaLoader_InvokeScriptFile(HOST_PTR(lua_State) L, const char *file_path_str));
+RECOMP_IMPORT(".", void LuaLoader_InvokeScriptFile(u64 L, const char *file_path_str));
+RECOMP_IMPORT(".", void LuaLoader_DumpRDRAM(const char *file_path_str, bool include_tail_nulls));
 
 #endif

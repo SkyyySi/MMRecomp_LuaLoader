@@ -67,11 +67,14 @@ function build() {
 		"$cc"
 		#-Wall
 		-Wpedantic
+		-Werror=nonnull
 		-Werror=implicit
 		-Werror=implicit-{fallthrough,function-declaration,int}
 		-std="$cstd"
 		-shared
 		-fPIC
+		-ggdb
+		-O0
 		-D'_GNU_SOURCE'
 		"${cflags[@]}"
 		"${extra_cflags[@]}"
@@ -93,8 +96,8 @@ function rebuild_and_run() {
 	clear
 
 	if (( $# == 0 )); then
-		build
-		run
+		build || return
+		run || return
 		return
 	fi
 
@@ -105,7 +108,7 @@ function rebuild_and_run() {
 	if [[ "$(realpath --physical -- "$file")" == "$script_path" ]]; then
 		exec "$BASH" "$script_path" "${script_args[@]}"
 	elif [[ "$file" != *'.lua' ]]; then
-		build
+		build || return
 	fi
 
 	run

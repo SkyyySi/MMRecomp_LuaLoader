@@ -128,7 +128,8 @@ function rebuild_game() {
 			cd "$HOME/Zelda64Recompiled" &&
 			env \
 				LD_LIBRARY_PATH="${XDG_CONFIG_HOME:-$HOME/.config}/Zelda64Recompiled/mods" \
-				'./Zelda64Recompiled'
+				gdb -batch -ex 'run' -ex 'bt' --ex 'info registers' --args './Zelda64Recompiled'
+				#valgrind --tool='memcheck' --num-callers='50' './Zelda64Recompiled'
 		)
 
 		local -i exit_code="$?"

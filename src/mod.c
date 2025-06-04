@@ -121,9 +121,9 @@ RECOMP_HOOK("Player_Init") void test_hook(Actor *thisx, PlayState *play) {
 	const char script_code[] = "If you can read this, it works!";
 	LOG("script_code["PRINTF_S32"] = "PRINTF_PTR, (s32)sizeof(script_code), script_code);
 
-	HOST_PTR(lua_State) L = LuaLoader_Init();
+	u64 L = LuaLoader_Init();
 
-	if (L.u64 == 0ULL) {
+	if (L == 0ULL) {
 		LOG("Expected `L` to be a pointer to `lua_State`, but got NULL instead!");
 		return;
 	}
@@ -155,6 +155,8 @@ CleanupScriptFilePath:
 
 CleanupLuaVM:
 	LuaLoader_Deinit(L);
+
+	//LuaLoader_DumpRDRAM("/tmp/rdram-dump.bin", true);
 }
 
 void print_actor_info(const Actor *restrict const thisx) {

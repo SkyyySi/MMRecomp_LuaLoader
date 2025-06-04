@@ -435,3 +435,49 @@ RECOMP_EXPORT void LuaLoader_InvokeScriptFile(u8 *rdram, RecompContext *ctx) {
 
 	return InvokeScriptHelper(L, luaL_loadfilex(L, file_path_str, "t"));
 }
+
+RECOMP_EXPORT void LuaLoader_DumpRDRAM(const u8 *restrict const rdram, const RecompContext *restrict const ctx) {
+	const RecompGPR file_path_n64 = ctx->r4;
+	const bool include_tail_nulls = ctx->r5 & 1;
+
+	size_t file_path_length = 0;
+	while (MEM_B(file_path_length, file_path_n64) != 0) {
+		file_path_length++;
+	}
+
+	char *file_path = (char *)malloc((file_path_length + 1) * sizeof(char));
+	if (file_path == NULL) {
+		LOG("Failed to allocate memory for file path buffer! (`malloc()` returned NULL)");
+		return;
+	}
+
+	for (size_t i = 0; i < file_path_length; i++) {
+		file_path[i] = (char)MEM_B(i, file_path_n64);
+	}
+
+	const char mode[] = "wb";
+
+	FILE *const file = fopen(file_path, mode);
+	if (file == NULL) {
+		LOG("Failed to open file \"%s\" in \"%s\" mode! (`fopen()` returned NULL)", file_path, mode);
+		return;
+	}
+
+	size_t num_bytes_to_write = RDRAM_LENGTH;
+	if (!include_tail_nulls) {
+		while ((num_bytes_to_write > 0) && (rdram[num_bytes_to_write - 1] == 0)) {
+			num_bytes_to_write--;
+		}
+	}
+
+	LOG("Writing %zu (0x%08zX) bytes to file \"%s\"...", num_bytes_to_write, num_bytes_to_write, file_path);
+	const size_t num_written_bytes = fwrite(rdram, sizeof(u8), num_bytes_to_write, file);
+	if (num_written_bytes != num_bytes_to_write) {
+		const size_t delta = num_bytes_to_write - num_written_bytes;
+		LOG("Writing failed, only wrote %zu (0x%08zX) bytes! (%zu (0x%08zX) bytes missing)", num_written_bytes, num_written_bytes, delta, delta);
+	} else {
+		LOG("Writing completed successfully!")
+	}
+
+	fclose(file);
+}

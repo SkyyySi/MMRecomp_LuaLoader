@@ -19,7 +19,21 @@
             ],
             "compilerPath": "gcc",
             "cStandard": "gnu23",
-            "intelliSenseMode": "${default}"
+            "intelliSenseMode": "${default}",
+            "compilerArgs": [
+                "-Wall",
+                "-Wpedantic",
+                "-Werror=nonnull",
+                "-Werror=implicit",
+                "-Werror=implicit-fallthrough",
+                "-Werror=implicit-function-declaration",
+                "-Werror=implicit-int",
+                "-shared",
+                "-static",
+                "-fPIC",
+                "-ggdb",
+                "-D_GNU_SOURCE"
+            ]
         }
     ],
     "version": 4
