@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euCo pipefail
-cd "$(dirname -- "${BASH_SOURCE[0]}")" || exit 1
+declare -g script_path=''
+script_path="$(realpath --physical -- "${BASH_SOURCE[0]:-$0}")"
+cd "$(dirname -- "$script_path")" || exit 1
+declare -g -a script_args=( "$@" )
 
 declare -g cc="${CC:-gcc}"
 declare -g lua_version="${LUA_VERSION:-5.4}"
@@ -27,6 +30,24 @@ fi
 if [[ -v LDFLAGS ]]; then
 	IFS=$' \n\r\t\v' read -r -s -a extra_ldflags <<< "$LDFLAGS"
 fi
+
+function try() {
+	local -a argv=( "$@" )
+
+	local -i exit_code=0
+	"${argv[@]}" || exit_code="$?"
+
+	if (( exit_code == 0 )); then
+		return 0
+	fi
+
+	printf \
+		'\n>>> Command "%q" exited with non-zero exit code \e[1;31m%d\e[22;39m!\n' \
+		"${argv[0]}" \
+		"$exit_code" 1>&2
+
+	return "$exit_code"
+}
 
 function build() {
 	local -a cflags=() ldflags=()
@@ -61,42 +82,44 @@ function build() {
 	)
 	#typeset -p cc_argv 1>&2
 
-	"${cc_argv[@]}"
+	try "${cc_argv[@]}"
 }
 
-declare -g test_lua_script='do
-	local pretty = require("pretty")
-	local print = pretty.print
-	local rdram = require("rdram")
-	print(rdram)
-	print(debug.getmetatable(rdram))
-end'
-
 function run() {
-	lua5.4 -e "$test_lua_script" || printf '\n>>> $? = %q\n' "$?" 1>&2
+	try lua5.4 -- './test.lua'
 }
 
 function rebuild_and_run() {
 	clear
 
-	if (( $# == 1 )); then
-		printf 'File: %q\n' "$1"
+	if (( $# == 0 )); then
+		build
+		run
+		return
 	fi
 
-	build || return 0
-	printf '\n'
+	local file="$1"
+
+	printf 'File: %q\n' "$file"
+
+	if [[ "$(realpath --physical -- "$file")" == "$script_path" ]]; then
+		exec "$BASH" "$script_path" "${script_args[@]}"
+	elif [[ "$file" != *'.lua' ]]; then
+		build
+	fi
+
 	run
 }
 
 eval "$(luarocks path --lua-version "$lua_version")"
 
-rebuild_and_run
+rebuild_and_run || true
 while true; do
 	rebuild_and_run "$(inotifywait \
 		--quiet \
 		--format '%w%f' \
 		--event 'modify' \
-		--include '\.(c|h)$' \
+		--include '\.(c|h|lua|sh)$' \
 		-- './'
-	)"
+	)" || true
 done

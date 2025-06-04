@@ -113,7 +113,7 @@ int LuaLoader__RDRAM__new(lua_State *L, u8 *rdram, lua_Integer capacity) {
 	Self *self = (Self *)lua_newuserdata(L, sizeof(Self));
 	luaL_setmetatable(L, LuaLoader__RDRAM__name);
 
-	self->raw_data    = rdram;
+	self->raw_data = rdram;
 	self->capacity = capacity;
 
 	return 1;
@@ -148,12 +148,65 @@ int LuaLoader__RDRAM__get_raw_bytes_as_string(lua_State *L) {
 
 
 
+#define CASE(VALUE, BLOCK) case (VALUE): { { BLOCK; }; break; }
+
+/**
+ * @param[in] L A pointer to the current Lua interpreter stack.
+ * @param[in] self A pointer to the instance of `LuaLoader__RDRAM` to read from.
+ * @param[in] index A 1-based index into `self->raw_data`. Must be in range
+ *                  `1 <= index <= self->capacity`, `0` is a not valid index!
+ * @param[in] type_size The size in bytes of the type `T` to interpret the data.
+ *                      This should simply be `sizeof(T)`.
+ */
+static u64 read_value_helper(
+		lua_State *L,
+		const Self *restrict const self,
+		const lua_Integer index,
+		const int_fast8_t type_size
+) {
+	assert(L != NULL);
+	ASSERT(self != NULL);
+	ASSERT(index >= 1);
+	ASSERT(index <= self->capacity);
+
+	switch (type_size) {
+		CASE(0, { return 0; });
+		CASE(1, {
+			TODO;
+		});
+		CASE(2, {
+			TODO;
+		});
+		CASE(4, {
+			TODO;
+		});
+		CASE(8, {
+			/* uint64_t ret = 0;
+			uint64_t lo = (*(int32_t *)(rdram + ((((offset + 4) + (reg))) & 0x7FFFFFFFULL)));
+			uint64_t hi = (*(int32_t *)(rdram + ((((offset + 0) + (reg))) & 0x7FFFFFFFULL)));
+			ret = (lo << 0) | (hi << 32);
+			return ret; */
+
+			// TODO: Test if the `& 0x7FFFFFFFULL` bitmask is redundant here
+			// and, if it is, remove it.
+			u32 low  = *(u32 *)(self->raw_data + ((index + 4) & 0x7FFFFFFFULL));
+			u32 high = *(u32 *)(self->raw_data + ((index + 0) & 0x7FFFFFFFULL));
+
+			return ((u64)low) | (((u64)high) << 32);
+		});
+	}
+
+	return 0;
+}
+
 #define IMPL_READ_VALUE_METHOD(TYPENAME) \
 int LuaLoader__RDRAM__read_value_##TYPENAME(lua_State *L) { \
 	Self *self = luaL_checkudata(L, 1, LuaLoader__RDRAM__name); \
 	TODO; \
 	return 1; \
 }
+
+const size_t x = sizeof(u32);
 
 IMPL_READ_VALUE_METHOD(s8)
 IMPL_READ_VALUE_METHOD(s16)
@@ -245,6 +298,20 @@ int luaopen_rdram(lua_State *L) {
 	if (luaL_newmetatable(L, LuaLoader__RDRAM__name)) {
 		luaL_setfuncs(L, LuaLoader__RDRAM_meta_methods, 0);
 	}
+
+	lua_pushstring(L, "__index");
+	lua_createtable(L, 0, sizeof(LuaLoader__RDRAM_methods) / sizeof(luaL_Reg) - 1);
+	luaL_setfuncs(L, LuaLoader__RDRAM_methods, 0);
+
+	/* lua_createtable(L, 0, 1);
+	lua_pushstring(L, "__index");
+	lua_pushcfunction(L, LuaLoader__RDRAM__index);
+	lua_setmetatable(L, -2); */
+
+	// Set the table containing normal / non-meta methods as the `__index` field
+	// of the `LuaLoader::RDRAM` metatable. If the given key cannot be found in
+	// this `__index`-table, `LuaLoader__RDRAM__index()` will be invoked.
+	lua_rawset(L, -3);
 
 	//lua_createtable(L, 0, 1);
 
