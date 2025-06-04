@@ -23,7 +23,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 typedef struct LuaLoader__RDRAM {
-	u8 *rdram;
+	u8 *raw_data;
 	lua_Integer capacity;
 } LuaLoader__RDRAM;
 
@@ -38,18 +38,27 @@ int LuaLoader__RDRAM__get_raw_bytes_as_string(lua_State *L);
 //int LuaLoader__RDRAM__get_bytes_as_table(lua_State *L);
 //int LuaLoader__RDRAM__get_raw_bytes_as_table(lua_State *L);
 
-int LuaLoader__RDRAM__next_byte_pair(lua_State *L);
+int LuaLoader__RDRAM__read_value_s8(lua_State *L);
+int LuaLoader__RDRAM__read_value_s16(lua_State *L);
+int LuaLoader__RDRAM__read_value_s32(lua_State *L);
+int LuaLoader__RDRAM__read_value_s64(lua_State *L);
+int LuaLoader__RDRAM__read_value_u8(lua_State *L);
+int LuaLoader__RDRAM__read_value_u16(lua_State *L);
+int LuaLoader__RDRAM__read_value_u32(lua_State *L);
+int LuaLoader__RDRAM__read_value_u64(lua_State *L);
+int LuaLoader__RDRAM__read_value_f32(lua_State *L);
+int LuaLoader__RDRAM__read_value_f64(lua_State *L);
 
-int LuaLoader__RDRAM__read_s8(lua_State *L);
-int LuaLoader__RDRAM__read_s16(lua_State *L);
-int LuaLoader__RDRAM__read_s32(lua_State *L);
-int LuaLoader__RDRAM__read_s64(lua_State *L);
-int LuaLoader__RDRAM__read_u8(lua_State *L);
-int LuaLoader__RDRAM__read_u16(lua_State *L);
-int LuaLoader__RDRAM__read_u32(lua_State *L);
-int LuaLoader__RDRAM__read_u64(lua_State *L);
-int LuaLoader__RDRAM__read_f32(lua_State *L);
-int LuaLoader__RDRAM__read_f64(lua_State *L);
+int LuaLoader__RDRAM__next_pair_s8(lua_State *L);
+int LuaLoader__RDRAM__next_pair_s16(lua_State *L);
+int LuaLoader__RDRAM__next_pair_s32(lua_State *L);
+int LuaLoader__RDRAM__next_pair_s64(lua_State *L);
+int LuaLoader__RDRAM__next_pair_u8(lua_State *L);
+int LuaLoader__RDRAM__next_pair_u16(lua_State *L);
+int LuaLoader__RDRAM__next_pair_u32(lua_State *L);
+int LuaLoader__RDRAM__next_pair_u64(lua_State *L);
+int LuaLoader__RDRAM__next_pair_f32(lua_State *L);
+int LuaLoader__RDRAM__next_pair_f64(lua_State *L);
 
 int LuaLoader__RDRAM__index(lua_State *L);
 int LuaLoader__RDRAM__newindex(lua_State *L);
@@ -67,17 +76,26 @@ static const luaL_Reg LuaLoader__RDRAM_methods[] = {
 	{ "get_raw_bytes_as_string", LuaLoader__RDRAM__get_raw_bytes_as_string },
 	//{ "get_bytes_as_table",      LuaLoader__RDRAM__get_bytes_as_table      },
 	//{ "get_raw_bytes_as_table",  LuaLoader__RDRAM__get_raw_bytes_as_table  },
-	{ "next_byte_pair",          LuaLoader__RDRAM__next_byte_pair          },
-	{ "read_s8",                 LuaLoader__RDRAM__read_s8                 },
-	{ "read_s16",                LuaLoader__RDRAM__read_s16                },
-	{ "read_s32",                LuaLoader__RDRAM__read_s32                },
-	{ "read_s64",                LuaLoader__RDRAM__read_s64                },
-	{ "read_u8",                 LuaLoader__RDRAM__read_u8                 },
-	{ "read_u16",                LuaLoader__RDRAM__read_u16                },
-	{ "read_u32",                LuaLoader__RDRAM__read_u32                },
-	{ "read_u64",                LuaLoader__RDRAM__read_u64                },
-	{ "read_f32",                LuaLoader__RDRAM__read_f32                },
-	{ "read_f64",                LuaLoader__RDRAM__read_f64                },
+	{ "read_value_s8",           LuaLoader__RDRAM__read_value_s8           },
+	{ "read_value_s16",          LuaLoader__RDRAM__read_value_s16          },
+	{ "read_value_s32",          LuaLoader__RDRAM__read_value_s32          },
+	{ "read_value_s64",          LuaLoader__RDRAM__read_value_s64          },
+	{ "read_value_u8",           LuaLoader__RDRAM__read_value_u8           },
+	{ "read_value_u16",          LuaLoader__RDRAM__read_value_u16          },
+	{ "read_value_u32",          LuaLoader__RDRAM__read_value_u32          },
+	{ "read_value_u64",          LuaLoader__RDRAM__read_value_u64          },
+	{ "read_value_f32",          LuaLoader__RDRAM__read_value_f32          },
+	{ "read_value_f64",          LuaLoader__RDRAM__read_value_f64          },
+	{ "next_pair_s8",            LuaLoader__RDRAM__next_pair_s8            },
+	{ "next_pair_s16",           LuaLoader__RDRAM__next_pair_s16           },
+	{ "next_pair_s32",           LuaLoader__RDRAM__next_pair_s32           },
+	{ "next_pair_s64",           LuaLoader__RDRAM__next_pair_s64           },
+	{ "next_pair_u8",            LuaLoader__RDRAM__next_pair_u8            },
+	{ "next_pair_u16",           LuaLoader__RDRAM__next_pair_u16           },
+	{ "next_pair_u32",           LuaLoader__RDRAM__next_pair_u32           },
+	{ "next_pair_u64",           LuaLoader__RDRAM__next_pair_u64           },
+	{ "next_pair_f32",           LuaLoader__RDRAM__next_pair_f32           },
+	{ "next_pair_f64",           LuaLoader__RDRAM__next_pair_f64           },
 	{ NULL,                      NULL                                      },
 };
 

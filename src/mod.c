@@ -93,7 +93,7 @@ sizeof(u64) = 8
 ((u32)(((u64)(VALUE)) & ((u64)(0xFFFFFFFF)))), ((u32)((((u64)(VALUE)) >> ((u64)(32))) & ((u64)(0xFFFFFFFF))))
 
 /* RECOMP_HOOK("Player_Init") void my_player_init_hook(Actor *thisx, PlayState *play) {
-	Lua L = LuaLoader_Init();
+	HOST_PTR(lua_State) L = LuaLoader_Init();
 
 	char bits[72];
 	format_bits_u64(&L, WITH_SIZE(bits));
@@ -121,9 +121,9 @@ RECOMP_HOOK("Player_Init") void test_hook(Actor *thisx, PlayState *play) {
 	const char script_code[] = "If you can read this, it works!";
 	LOG("script_code["PRINTF_S32"] = "PRINTF_PTR, (s32)sizeof(script_code), script_code);
 
-	Lua L = LuaLoader_Init();
+	HOST_PTR(lua_State) L = LuaLoader_Init();
 
-	if (L == 0ULL) {
+	if (L.u64 == 0ULL) {
 		LOG("Expected `L` to be a pointer to `lua_State`, but got NULL instead!");
 		return;
 	}

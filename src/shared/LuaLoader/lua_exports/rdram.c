@@ -18,11 +18,19 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
-#define TODO \
-return luaL_error(L, "Function '%s' is not yet implemented!", __func__);
+#define TODO { \
+	const char *func_name = __func__; \
+	return luaL_error( \
+		L, \
+		"Function '%s' is not yet implemented!", \
+		(func_name + sizeof("LuaLoader__RDRAM__") - 1) \
+	); \
+}
 
 #define ASSERT(PREDICATE) \
-if (!(PREDICATE)) { return luaL_error(L, "Assertion failed: %s", #PREDICATE); }
+if (!(PREDICATE)) { \
+	return luaL_error(L, "Assertion failed: %s", #PREDICATE); \
+}
 
 #define RDRAM_INDEX(INDEX) ((((u64)(INDEX)) & 0x7FFFFFFFULL) ^ 3ULL)
 
@@ -39,7 +47,7 @@ static lua_Integer rdram_count_length(const Self *restrict const self) {
 	lua_Integer length = capacity;
 
 	lua_Integer index = RDRAM_INDEX(length - 1ULL);
-	while ((index >= 0) && (index < capacity) && (self->rdram[index] == 0)) {
+	while ((index >= 0) && (index < capacity) && (self->raw_data[index] == 0)) {
 		length--;
 		index = RDRAM_INDEX(length - 1ULL);
 	}
@@ -63,7 +71,7 @@ static u8 *rdram_get_data(
 		*out_length = 0LL;
 	}
 
-	u8 *rdram = self->rdram;
+	u8 *rdram = self->raw_data;
 
 	lua_Integer length = rdram_count_length(self);
 
@@ -105,7 +113,7 @@ int LuaLoader__RDRAM__new(lua_State *L, u8 *rdram, lua_Integer capacity) {
 	Self *self = (Self *)lua_newuserdata(L, sizeof(Self));
 	luaL_setmetatable(L, LuaLoader__RDRAM__name);
 
-	self->rdram    = rdram;
+	self->raw_data    = rdram;
 	self->capacity = capacity;
 
 	return 1;
@@ -134,78 +142,50 @@ int LuaLoader__RDRAM__get_bytes_as_string(lua_State *L) {
 
 int LuaLoader__RDRAM__get_raw_bytes_as_string(lua_State *L) {
 	Self *self = luaL_checkudata(L, 1, LuaLoader__RDRAM__name);
-	lua_pushlstring(L, (char *)(self->rdram), self->capacity);
-	return 1;
-}
-
-
-int LuaLoader__RDRAM__next_byte_pair(lua_State *L) {
-	Self *self = luaL_checkudata(L, 1, LuaLoader__RDRAM__name);
-	TODO;
+	lua_pushlstring(L, (char *)(self->raw_data), self->capacity);
 	return 1;
 }
 
 
 
-int LuaLoader__RDRAM__read_s8(lua_State *L) {
-	Self *self = luaL_checkudata(L, 1, LuaLoader__RDRAM__name);
-	TODO;
-	return 1;
+#define IMPL_READ_VALUE_METHOD(TYPENAME) \
+int LuaLoader__RDRAM__read_value_##TYPENAME(lua_State *L) { \
+	Self *self = luaL_checkudata(L, 1, LuaLoader__RDRAM__name); \
+	TODO; \
+	return 1; \
 }
 
-int LuaLoader__RDRAM__read_s16(lua_State *L) {
-	Self *self = luaL_checkudata(L, 1, LuaLoader__RDRAM__name);
-	TODO;
-	return 1;
+IMPL_READ_VALUE_METHOD(s8)
+IMPL_READ_VALUE_METHOD(s16)
+IMPL_READ_VALUE_METHOD(s32)
+IMPL_READ_VALUE_METHOD(s64)
+IMPL_READ_VALUE_METHOD(u8)
+IMPL_READ_VALUE_METHOD(u16)
+IMPL_READ_VALUE_METHOD(u32)
+IMPL_READ_VALUE_METHOD(u64)
+IMPL_READ_VALUE_METHOD(f32)
+IMPL_READ_VALUE_METHOD(f64)
+
+
+
+#define IMPL_NEXT_PAIR_METHOD(TYPENAME) \
+int LuaLoader__RDRAM__next_pair_##TYPENAME(lua_State *L) { \
+	Self *self = luaL_checkudata(L, 1, LuaLoader__RDRAM__name); \
+	TODO; \
+	return 1; \
 }
 
-int LuaLoader__RDRAM__read_s32(lua_State *L) {
-	Self *self = luaL_checkudata(L, 1, LuaLoader__RDRAM__name);
-	TODO;
-	return 1;
-}
+IMPL_NEXT_PAIR_METHOD(s8)
+IMPL_NEXT_PAIR_METHOD(s16)
+IMPL_NEXT_PAIR_METHOD(s32)
+IMPL_NEXT_PAIR_METHOD(s64)
+IMPL_NEXT_PAIR_METHOD(u8)
+IMPL_NEXT_PAIR_METHOD(u16)
+IMPL_NEXT_PAIR_METHOD(u32)
+IMPL_NEXT_PAIR_METHOD(u64)
+IMPL_NEXT_PAIR_METHOD(f32)
+IMPL_NEXT_PAIR_METHOD(f64)
 
-int LuaLoader__RDRAM__read_s64(lua_State *L) {
-	Self *self = luaL_checkudata(L, 1, LuaLoader__RDRAM__name);
-	TODO;
-	return 1;
-}
-
-int LuaLoader__RDRAM__read_u8(lua_State *L) {
-	Self *self = luaL_checkudata(L, 1, LuaLoader__RDRAM__name);
-	TODO;
-	return 1;
-}
-
-int LuaLoader__RDRAM__read_u16(lua_State *L) {
-	Self *self = luaL_checkudata(L, 1, LuaLoader__RDRAM__name);
-	TODO;
-	return 1;
-}
-
-int LuaLoader__RDRAM__read_u32(lua_State *L) {
-	Self *self = luaL_checkudata(L, 1, LuaLoader__RDRAM__name);
-	TODO;
-	return 1;
-}
-
-int LuaLoader__RDRAM__read_u64(lua_State *L) {
-	Self *self = luaL_checkudata(L, 1, LuaLoader__RDRAM__name);
-	TODO;
-	return 1;
-}
-
-int LuaLoader__RDRAM__read_f32(lua_State *L) {
-	Self *self = luaL_checkudata(L, 1, LuaLoader__RDRAM__name);
-	TODO;
-	return 1;
-}
-
-int LuaLoader__RDRAM__read_f64(lua_State *L) {
-	Self *self = luaL_checkudata(L, 1, LuaLoader__RDRAM__name);
-	TODO;
-	return 1;
-}
 
 
 int LuaLoader__RDRAM__index(lua_State *L) {
@@ -226,10 +206,10 @@ int LuaLoader__RDRAM__tostring(lua_State *L) {
 	AUTO_FREE char *str = NULL;
 	int str_length = asprintf(
 		&str,
-		"<userdata %s at 0x%016"PRIX64" { rdram: 0x%016"PRIX64", capacity: 0x%08"PRIX64" }>",
+		"<userdata %s at 0x%016"PRIX64" { raw_data: 0x%016"PRIX64", capacity: 0x%08"PRIX64" }>",
 		LuaLoader__RDRAM__name,
 		(u64)self,
-		(u64)(self->rdram),
+		(u64)(self->raw_data),
 		(u64)(self->capacity)
 	);
 

@@ -91,6 +91,7 @@ function log() {
 }
 
 if [[ ! -d "$MODS_DIR" ]]; then
+	log 'ERROR: The target mods directory "%q" does not exist!' "$MODS_DIR"
 	exit 1
 fi
 
