@@ -89,3 +89,15 @@ Passing a `NULL`-terminated C-string from N64 code to native code.
 ```c
 // TODO
 ```
+
+## Functions and symbols
+
+### Search for the offset of a function in the Recomp binary
+
+```bash
+nm -- '/path/to/Zelda64Recompiled' > '/tmp/symbols.txt'
+# These functions are declared as function pointers in `mod_recomp.h`
+for symbol in 'get_function' 'cop0_status_write' 'cop0_status_read' 'switch_error' 'do_break'; do
+    rg -- '\b'"$symbol"'\b' '/tmp/symbols.txt'
+done
+```

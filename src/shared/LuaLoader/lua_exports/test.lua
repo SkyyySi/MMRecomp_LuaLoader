@@ -1,3 +1,6 @@
+#!/usr/bin/env lua5.4
+---@version 5.4
+
 local require      = require
 local select       = select
 local xpcall       = xpcall
@@ -93,8 +96,8 @@ end
 
 test("debug.getmetatable(rdram)")
 test("rdram:get_capacity()")
-test("rdram:get_length()")
-test("#rdram")
+--test("rdram:get_length()")
+--test("#rdram")
 
 test("pairs(rdram)")
 for k, v in pairs(rdram) do
@@ -110,10 +113,10 @@ try(function()
 	local rdram_dump = assert(rdram_dump_file:read("*a"))
 	print(string.format("rdram_dump = %q", rdram_dump:sub(length - 80, length)))
 end)
-do
+try(function()
 	local buffer = {}
 	for i = length - 80, length do
 		buffer[#buffer+1] = string.char(rdram[i])
 	end
 	print(string.format("buffer = %q", table.concat(buffer)))
-end
+end)

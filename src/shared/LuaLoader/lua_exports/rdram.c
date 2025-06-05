@@ -27,9 +27,26 @@
 	); \
 }
 
+#define FIRST(FIRST, ...) FIRST
+
+#define REST(FIRST, ...) __VA_ARGS__
+
 #define ASSERT(PREDICATE, ...) \
 if (!(PREDICATE)) { \
-	return luaL_error(L, "Assertion failed: %s", #PREDICATE __VA_OPT__(,) __VA_ARGS__); \
+	lua_pushfstring( \
+		L, \
+		( \
+			"\x1b[0;1;41m ASSERT \x1b[22;49m \x1b[37;40m%s\x1b[39;49m " \
+			"[\x1b[32m%s\x1b[39m() \x1b[35m::\x1b[39m \x1b[33m%s\x1b[35m:\x1b[34m%d\x1b[39m]\n" \
+			"    \x1b[1;35m-->\x1b[22;39m " FIRST(__VA_ARGS__) \
+		), \
+		(#PREDICATE), \
+		(__func__), \
+		(__FILE__), \
+		(__LINE__) \
+		__VA_OPT__(,) REST(__VA_ARGS__) \
+	); \
+	return lua_error(L); \
 }
 
 #define RDRAM_INDEX(INDEX) ((((u64)(INDEX)) & 0x7FFFFFFFULL) ^ 3ULL)
@@ -215,6 +232,7 @@ int LuaLoader__RDRAM__new(lua_State *L, u8 *rdram, lua_Integer capacity) {
 }
 
 
+
 int LuaLoader__RDRAM__get_length(lua_State *L) {
 	Self *self = luaL_checkudata(L, 1, LuaLoader__RDRAM__name);
 	lua_pushinteger(L, rdram_count_length(self));
@@ -348,7 +366,7 @@ int LuaLoader__RDRAM__index(lua_State *L) {
 			// The recomp allows N64 code to use up to 512 MiB of RAM. Zero is not a
 			// valid index because Lua uses one-based indexing.
 			ASSERT(
-				(index > 0) && (index <= self->capacity),
+				(index >= 1) && (index <= self->capacity),
 				"Index out of range! (expected value in range [1, %d], got: %d)",
 				self->capacity,
 				index
